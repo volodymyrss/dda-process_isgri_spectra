@@ -1,5 +1,5 @@
 import ddosa 
-import pyfits
+from astropy.io import fits as pyfits
 from bcolors import render
 
 try:
