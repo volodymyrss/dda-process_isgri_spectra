@@ -1,6 +1,10 @@
 import ddosa 
 from astropy.io import fits as pyfits
 from bcolors import render
+import subprocess
+import os
+import dataanalysis as da
+from numpy import *
 
 try:
     import crab
@@ -13,8 +17,6 @@ def get_open_fds():
 
     .. warning: will only work on UNIX-like os-es.
     '''
-    import subprocess
-    import os
 
     pid = os.getpid()
     procs = subprocess.check_output( 
@@ -52,10 +54,6 @@ class ProcessSpectra(ddosa.DataAnalysis):
             setattr(self,fn,da.DataFile(fn))
 
 
-import ddosa
-import dataanalysis as da
-import pyfits
-from numpy import *
 
 
 class ScWSpectraList(ddosa.DataAnalysis):
