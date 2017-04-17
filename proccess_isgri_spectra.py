@@ -36,7 +36,7 @@ def get_open_fds():
 
 class ProcessSpectra(ddosa.DataAnalysis):
     input_spectra=ddosa.ii_spectra_extract
-    #response="/esources/rmf_256bands.fits"
+    #response="/resources/rmf_256bands.fits"
     #arf="/Integral/data/resources/arfs/arf_62_1528.fits"
 
     def main(self):
@@ -46,8 +46,9 @@ class ProcessSpectra(ddosa.DataAnalysis):
         for hdu in f[2:]:
             sname=hdu.header['NAME']
             fn="isgri_spectrum_%s.fits"%sname.replace(" ","_")
-     #       hdu.header['RESPFILE']=self.response
+       #     hdu.header['RESPFILE']=self.response
      #       hdu.header['ANCRFILE']=self.arf
+            print "source:",sname,"to",fn
             print hdu.header['RESPFILE']
             print hdu.header['ANCRFILE']
             hdu.writeto(fn,clobber=True)
