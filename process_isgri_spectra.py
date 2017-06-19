@@ -144,7 +144,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
     cached=True
 
-    version="v5"
+    version="v5.1"
 
     sources=['Crab']
 
@@ -223,13 +223,27 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
         eb1,eb2=map(array,zip(*self.input_response.bins))
 
         source_results=[]
-            
+
+        
 
         for name,spectrum in spectra.items():
+            source_short_name=name.strip().replace(" ","_")
+
+            rmf_fn="rmf_sum_%s.fits"%source_short_name
+            fits.open(self.input_response.binrmf).write(rmf_fn,clobber=True)
+            #fits.open(spectrum[3].header['RESPFILE']).write(rmf_fn,clobber=True)
+            
+            arf_fn="arf_sum_%s.fits"%source_short_name
+            fits.open(spectrum[3].header['ANCRFILE']).write(arf_fn,clobber=True)
+
             spectrum[3].data['RATE'][:],spectrum[3].data['STAT_ERR'][:]=self.input_efficiency.correct(spectrum[0][:],(spectrum[1]**0.5)[:])
             spectrum[3].header['EXPOSURE']=spectrum[2]
-            spectrum[3].header['RESPFILE']=self.input_response.binrmf
-            fn="isgri_sum_%s.fits"%name.strip().replace(" ","_")
+            #spectrum[3].header['RESPFILE']=self.input_response.binrmf
+
+            spectrum[3].header['RESPFILE']=rmf_fn
+            spectrum[3].header['ANCRFILE']=arf_fn
+
+            fn="isgri_sum_%s.fits"&source_short_name
             spectrum[3].writeto(fn,clobber=True)
 
 
@@ -266,6 +280,8 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
                 
 
             setattr(self,fn.replace(".fits",""),da.DataFile(fn))
+            setattr(self,rmf_fn.replace(".fits",""),da.DataFile(rmf_fn))
+            setattr(self,arf_fn.replace(".fits",""),da.DataFile(arf_fn))
 
         srf=open("source_summary.txt","w")
         for sr in source_results:
