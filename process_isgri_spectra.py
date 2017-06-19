@@ -5,6 +5,9 @@ import subprocess
 import os
 import dataanalysis as da
 from numpy import *
+from collections import defaultdict
+
+import useresponse
 
 try:
     import crab
@@ -36,9 +39,9 @@ def get_open_fds():
 
 class ProcessSpectra(ddosa.DataAnalysis):
     input_spectra=ddosa.ii_spectra_extract
-    #response="/resources/rmf_256bands.fits"
-    #arf="/Integral/data/resources/arfs/arf_62_1528.fits"
-    arf=None
+    input_arf=useresponse.FindResponse
+    input_response=ddosa.ISGRIResponse
+
 
     def main(self):
         f=fits.open(self.input_spectra.spectrum.path)
@@ -47,10 +50,10 @@ class ProcessSpectra(ddosa.DataAnalysis):
         for hdu in f[2:]:
             sname=hdu.header['NAME']
             fn="isgri_spectrum_%s.fits"%sname.replace(" ","_")
-       #     hdu.header['RESPFILE']=self.response
 
-            if self.arf is not None:
-                hdu.header['ANCRFILE']=self.arf
+            hdu.header['ANCRFILE']=self.input_arf.arf_path
+            hdu.header['RESPFILE']=self.input_response.path
+
             print "source:",sname,"to",fn
             print hdu.header['RESPFILE']
             print hdu.header['ANCRFILE']
@@ -72,7 +75,7 @@ class ScWSpectraList(ddosa.DataAnalysis):
     maxspec=None
 
     def main(self):
-        self.spectra=[ddosa.ii_spectra_extract(assume=scw) for scw in self.input_scwlist.scwlistdata]
+        self.spectra=[[ddosa.ii_spectra_extract(assume=scw),useresponse.FindResponse(assume=scw),ddosa.ISGRIResponse(assume=scw)] for scw in self.input_scwlist.scwlistdata]
         
         if self.maxspec is not None: self.spectra=self.spectra[:self.maxspec]
 
@@ -93,7 +96,7 @@ class FileSpectraList(ddosa.DataAnalysis):
     maxspec=None
 
     def main(self):
-        self.spectra=[SpectrumFromFile(input_filename=fn) for fn in open(self.input_file.filename)]
+        self.spectra=[SpectrumFromFile(input_filename=fn) for fn in open(self.input_file.filename)] # incompat!
 
         print self.spectra
         
@@ -141,10 +144,11 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
     copy_cached_input=False
 
+    spectra=None
 
     cached=True
 
-    version="v5.1"
+    version="v5.2"
 
     sources=['Crab']
 
@@ -165,7 +169,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
         t0=time.time()
         i_spec=1
 
-        for spectrum in choice:
+        for spectrum,arf,rmf in choice:
             if hasattr(spectrum,'empty_results'):
                 print "skipping",spectrum
                 continue
@@ -199,7 +203,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
                     err=e.data['STAT_ERR']
                     exposure=e.header['EXPOSURE']
                     if name not in spectra:
-                        spectra[name]=[rate,err**2,exposure,e]
+                        spectra[name]=[rate,err**2,exposure,e,defaultdict(int),defaultdict(int)]
                         preserve_file=True
                     else:
                         err[isnan(err) | (err==0)]=inf
@@ -208,8 +212,15 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
                         #spectra[name][0]=(spectra[name][0]/spectra[name][1]+rate/err**2)/(1/spectra[name][1]+1/err**2)
                         spectra[name][1]=1/(1/spectra[name][1]+1/err**2)
                         spectra[name][2]+=exposure
+
+                    arf_path=arf.arf_path
+                    rmf_path=rmf.path
+
+                    spectra[name][4][arf_path]+=exposure
+                    spectra[name][5][rmf_path]+=exposure
             
                     print render("{BLUE}%.20s{/}"%name),"%.4lg sigma in %.5lg ks"%(sig(rate,err),exposure/1e3),"total %.4lg in %.5lg ks"%(sig(spectra[name][0],spectra[name][1]), spectra[name][2]/1e3)
+
 
             #if not preserve_file:
             #    print "closing file"
@@ -222,26 +233,21 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
         eb1,eb2=map(array,zip(*self.input_response.bins))
 
-        source_results=[]
+        self.spectra=spectra
 
-        
+        source_results=[]
 
         for name,spectrum in spectra.items():
             source_short_name=name.strip().replace(" ","_")
 
-            rmf_fn="rmf_sum_%s.fits"%source_short_name
-            fits.open(self.input_response.binrmf).writeto(rmf_fn,clobber=True)
-            #fits.open(spectrum[3].header['RESPFILE']).write(rmf_fn,clobber=True)
+            assert(len(spectrum[4].keys())==1)
+            arf_fn="arf_sum_%s.fits"%source_short_name
+            fits.open(spectrum[4].keys()[0]).writeto(arf_fn,clobber=True)
             
-            if spectrum[3].header['ANCRFILE'] == 'NONE':
-                arf_fn=None
-            else:
-                arf_fn="arf_sum_%s.fits"%source_short_name
-
-                try:
-                    fits.open(spectrum[3].header['ANCRFILE']).writeto(arf_fn,clobber=True)
-                except IOError:
-                    arf_fn=None
+            assert(len(spectrum[5].keys())==1)
+            rmf_fn="rmf_sum_%s.fits"%source_short_name
+            fits.open(spectrum[5].keys()[0]).writeto(rmf_fn,clobber=True)
+            
 
             spectrum[3].data['RATE'][:],spectrum[3].data['STAT_ERR'][:]=self.input_efficiency.correct(spectrum[0][:],(spectrum[1]**0.5)[:])
             spectrum[3].header['EXPOSURE']=spectrum[2]
