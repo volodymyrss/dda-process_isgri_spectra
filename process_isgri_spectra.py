@@ -287,8 +287,12 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
                 
 
             setattr(self,fn.replace(".fits",""),da.DataFile(fn))
-            setattr(self,rmf_fn.replace(".fits",""),da.DataFile(rmf_fn))
-            setattr(self,arf_fn.replace(".fits",""),da.DataFile(arf_fn))
+            
+            if rmf_fn is not None:
+                setattr(self,rmf_fn.replace(".fits",""),da.DataFile(rmf_fn))
+
+            if arf_fn is not None:
+                setattr(self,arf_fn.replace(".fits",""),da.DataFile(arf_fn))
 
         srf=open("source_summary.txt","w")
         for sr in source_results:
