@@ -1,5 +1,5 @@
 import ddosa 
-from astropy.io import fits as pyfits
+from astropy.io import fits 
 from bcolors import render
 import subprocess
 import os
@@ -41,7 +41,7 @@ class ProcessSpectra(ddosa.DataAnalysis):
     arf=None
 
     def main(self):
-        f=pyfits.open(self.input_spectra.spectrum.path)
+        f=fits.open(self.input_spectra.spectrum.path)
 
 
         for hdu in f[2:]:
@@ -177,7 +177,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
             i_spec+=1
             print "spectrum from",fn
 
-            f=pyfits.open(fn)
+            f=fits.open(fn)
 
 
             t1,t2=f[1].header['TSTART'],f[1].header['TSTOP']
