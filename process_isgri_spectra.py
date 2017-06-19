@@ -105,7 +105,7 @@ class FileSpectraList(ddosa.DataAnalysis):
 class SpectrumEfficiencyCorrection(ddosa.DataAnalysis):
     input_bins=ddosa.SpectraBins
 
-    enable=True
+    enable=False
 
     def main(self):
         print "will do"

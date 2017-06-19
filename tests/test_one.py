@@ -18,7 +18,7 @@ class ISGRIResponse(ddosa.ISGRIResponse):
 
 def test_sum():
     fa=process_isgri_spectra.ISGRISpectraSum(assume=[
-                            process_isgri_spectra.ScWSpectraList(input_scwlist=ddosa.IDScWList(use_scwid_list=["066500220010.001"],use_version="vx")),
+                            process_isgri_spectra.ScWSpectraList(input_scwlist=ddosa.IDScWList(use_scwid_list=["066500220010.001"],use_version="v1066500220010")),
                         ])
     fa.get()
 
