@@ -250,7 +250,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
             spectrum[3].header['RESPFILE']=rmf_fn
             spectrum[3].header['ANCRFILE']=arf_fn
 
-            fn="isgri_sum_%s.fits"&source_short_name
+            fn="isgri_sum_%s.fits"%source_short_name
             spectrum[3].writeto(fn,clobber=True)
 
 
