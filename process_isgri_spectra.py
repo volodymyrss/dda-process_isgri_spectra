@@ -230,11 +230,11 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
             source_short_name=name.strip().replace(" ","_")
 
             rmf_fn="rmf_sum_%s.fits"%source_short_name
-            fits.open(self.input_response.binrmf).write(rmf_fn,clobber=True)
+            fits.open(self.input_response.binrmf).writeto(rmf_fn,clobber=True)
             #fits.open(spectrum[3].header['RESPFILE']).write(rmf_fn,clobber=True)
             
             arf_fn="arf_sum_%s.fits"%source_short_name
-            fits.open(spectrum[3].header['ANCRFILE']).write(arf_fn,clobber=True)
+            fits.open(spectrum[3].header['ANCRFILE']).writeto(arf_fn,clobber=True)
 
             spectrum[3].data['RATE'][:],spectrum[3].data['STAT_ERR'][:]=self.input_efficiency.correct(spectrum[0][:],(spectrum[1]**0.5)[:])
             spectrum[3].header['EXPOSURE']=spectrum[2]
