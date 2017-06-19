@@ -214,7 +214,11 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
             #if not preserve_file:
             #    print "closing file"
             f.close()
-            print get_open_fds()
+
+            try:
+                print get_open_fds()
+            except Exception as e:
+                print "unable to check open fds"
 
         eb1,eb2=map(array,zip(*self.input_response.bins))
 
