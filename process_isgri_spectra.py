@@ -3,7 +3,12 @@ from astropy.io import fits
 from bcolors import render
 import subprocess
 import os
-import dataanalysis as da
+
+try:
+    from dataanalysis import core as da
+except ImportError:
+    import dataanalysis as da
+
 from numpy import *
 from collections import defaultdict
 
@@ -148,7 +153,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
     cached=True
 
-    version="v5.2"
+    version="v5.3"
 
     sources=['Crab']
 
