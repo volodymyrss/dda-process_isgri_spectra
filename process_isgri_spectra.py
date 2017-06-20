@@ -153,7 +153,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
     cached=True
 
-    version="v5.3"
+    version="v5.4"
 
     sources=['Crab']
 
@@ -306,7 +306,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
             if arf_fn is not None:
                 setattr(self,arf_fn.replace(".fits",""),da.DataFile(arf_fn))
 
-            self.extracted_sources.append([name,fn,rmf_fn,arf_fn])
+            self.extracted_sources.append([name,fn.replace(".fits",""),rmf_fn.replace(".fits",""),arf_fn.replace(".fits","")])
 
         self.source_results=source_results
 
