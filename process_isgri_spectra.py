@@ -236,6 +236,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
         self.spectra=spectra
 
         source_results=[]
+        self.extracted_sources=[]
 
         for name,spectrum in spectra.items():
             source_short_name=name.strip().replace(" ","_")
@@ -299,6 +300,10 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
             if arf_fn is not None:
                 setattr(self,arf_fn.replace(".fits",""),da.DataFile(arf_fn))
+
+            self.extracted_sources.append([name,fn,rmf_fn,arf_fn])
+
+        self.source_results=source_results
 
         srf=open("source_summary.txt","w")
         for sr in source_results:

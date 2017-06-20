@@ -24,6 +24,8 @@ def test_sum():
 
     print fa.spectra
 
+    print fa.extracted_sources
+
 
 def test_one():
     fa=process_isgri_spectra.ProcessSpectra(assume=[
