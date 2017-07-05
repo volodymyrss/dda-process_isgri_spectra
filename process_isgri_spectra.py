@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import ddosa 
 from astropy.io import fits 
 from bcolors import render
@@ -35,7 +37,7 @@ def get_open_fds():
     #        lambda s: s and s[ 0 ] == 'f' and s[1: ].isdigit(),
     files=        procs.split( '\n' ) 
 
-    #print files
+    #print(files)
 
     nprocs = len( 
             files
@@ -59,9 +61,9 @@ class ProcessSpectra(ddosa.DataAnalysis):
             hdu.header['ANCRFILE']=self.input_arf.arf_path
             hdu.header['RESPFILE']=self.input_response.path
 
-            print "source:",sname,"to",fn
-            print hdu.header['RESPFILE']
-            print hdu.header['ANCRFILE']
+            print("source:",sname,"to",fn)
+            print(hdu.header['RESPFILE'])
+            print(hdu.header['ANCRFILE'])
             hdu.writeto(fn,clobber=True)
             setattr(self,fn,da.DataFile(fn))
 
@@ -103,7 +105,7 @@ class FileSpectraList(ddosa.DataAnalysis):
     def main(self):
         self.spectra=[SpectrumFromFile(input_filename=fn) for fn in open(self.input_file.filename)] # incompat!
 
-        print self.spectra
+        print(self.spectra)
         
         if self.maxspec is not None: self.spectra=self.spectra[:self.maxspec]
 
@@ -113,7 +115,7 @@ class SpectrumEfficiencyCorrection(ddosa.DataAnalysis):
     enable=False
 
     def main(self):
-        print "will do"
+        print("will do")
 
     def get_version(self):
         v=self.get_signature()+"."+self.version
@@ -160,6 +162,14 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
     extract_all=False
     save_lc=True
 
+    def get_version(self):
+        v=self.get_signature()+"."+self.version
+        if self.extract_all:
+            v+=".extractall"
+        else:
+            v+".extract_"+("_".join(self.sources))
+        return v
+
     def main(self):
         spectra={}
 
@@ -176,21 +186,21 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
         for spectrum,arf,rmf in choice:
             if hasattr(spectrum,'empty_results'):
-                print "skipping",spectrum
+                print("skipping",spectrum)
                 continue
 
             fn=spectrum.spectrum.get_path()
-            print "%i/%i"%(i_spec,len(choice))
+            print("%i/%i"%(i_spec,len(choice)))
             tc=time.time()
-            print "seconds per spectrum:",(tc-t0)/i_spec,"will be ready in %.5lg seconds"%((len(choice)-i_spec)*(tc-t0)/i_spec)
+            print("seconds per spectrum:",(tc-t0)/i_spec,"will be ready in %.5lg seconds"%((len(choice)-i_spec)*(tc-t0)/i_spec))
             i_spec+=1
-            print "spectrum from",fn
+            print("spectrum from",fn)
 
             f=fits.open(fn)
 
 
             t1,t2=f[1].header['TSTART'],f[1].header['TSTOP']
-            print t1,t2
+            print(t1,t2)
 
             for e in f:
                 try:
@@ -224,17 +234,17 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
                     spectra[name][4][arf_path]+=exposure
                     spectra[name][5][rmf_path]+=exposure
             
-                    print render("{BLUE}%.20s{/}"%name),"%.4lg sigma in %.5lg ks"%(sig(rate,err),exposure/1e3),"total %.4lg in %.5lg ks"%(sig(spectra[name][0],spectra[name][1]), spectra[name][2]/1e3)
+                    print(render("{BLUE}%.20s{/}"%name),"%.4lg sigma in %.5lg ks"%(sig(rate,err),exposure/1e3),"total %.4lg in %.5lg ks"%(sig(spectra[name][0],spectra[name][1]), spectra[name][2]/1e3))
 
 
             #if not preserve_file:
-            #    print "closing file"
+            #    print("closing file")
             f.close()
 
             try:
-                print get_open_fds()
+                print(get_open_fds())
             except Exception as e:
-                print "unable to check open fds"
+                print("unable to check open fds")
 
         eb1,eb2=map(array,zip(*self.input_response.bins))
 
@@ -268,10 +278,10 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
             select_range=lambda x,a,b:((eb1>a) & (eb2<b) & ~isnan(x) & ~isinf(x))
 
-            print render("{RED}total{/} for {BLUE}%s{/}"%name)
+            print(render("{RED}total{/} for {BLUE}%s{/}"%name))
 
             all_spectra=[l for l in allsource_summary if l[0]==name]
-            #print all_spectra
+            #print(all_spectra)
 
             for erange in [(25,80),(80,300),(10,800)]:
                 m=select_range(spectrum[3].data['RATE'],erange[0],erange[1])
@@ -293,7 +303,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
                 except:
                     mCrab=1000000
                 source_stats=[erange[0],erange[1],r.sum(),(e**2).sum()**0.5,r.sum()/mCrab,sig(r,e),varamp]
-                print render("{RED}total{/} %.5lg-%.5lg keV %.5lg+-%.5lg cts %.5lg mCrab %.5lg sigma, variability %.5lg"%tuple(source_stats))
+                print(render("{RED}total{/} %.5lg-%.5lg keV %.5lg+-%.5lg cts %.5lg mCrab %.5lg sigma, variability %.5lg"%tuple(source_stats)))
 
                 source_results.append([name]+source_stats)
                 
@@ -315,4 +325,4 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
             srf.write(sr[0].replace(" ","_")+" "+" ".join(["%.5lg"%s for s in sr[1:]])+"\n")
             
  #       for l in allsource_summary:
-#            print l[0] #,l[1].shape
+#            print(l[0] #,l[1].shape)

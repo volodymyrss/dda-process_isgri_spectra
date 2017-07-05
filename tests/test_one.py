@@ -1,3 +1,11 @@
+import sys
+import os
+
+__this_dir__ = os.path.join(os.path.abspath(os.path.dirname(__file__)))
+
+sys.path.append(__this_dir__+"/../")
+sys.path.append(__this_dir__+"/../../dda-useresponse")
+
 import glob
 
 import astropy.io.fits as fits
