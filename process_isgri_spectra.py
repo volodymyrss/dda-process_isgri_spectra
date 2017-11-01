@@ -83,6 +83,9 @@ class ScWSpectraList(ddosa.DataAnalysis):
 
     def main(self):
         self.spectra=[[ddosa.ii_spectra_extract(assume=scw),useresponse.FindResponse(assume=scw),ddosa.ISGRIResponse(assume=scw)] for scw in self.input_scwlist.scwlistdata]
+
+        if len(self.spectra)==0:
+            raise ddosa.EmptyScWList()
         
         if self.maxspec is not None: self.spectra=self.spectra[:self.maxspec]
 
