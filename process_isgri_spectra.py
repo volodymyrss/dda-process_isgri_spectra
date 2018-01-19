@@ -58,7 +58,7 @@ class ProcessSpectra(ddosa.DataAnalysis):
             sname=hdu.header['NAME']
             fn="isgri_spectrum_%s.fits"%sname.replace(" ","_")
 
-            hdu.header['ANCRFILE']=self.input_arf.arf_path
+            #hdu.header['ANCRFILE']=self.input_arf.arf_path
             hdu.header['RESPFILE']=self.input_response.path
 
             print("source:",sname,"to",fn)
