@@ -46,8 +46,9 @@ def get_open_fds():
 
 class ProcessSpectra(ddosa.DataAnalysis):
     input_spectra=ddosa.ii_spectra_extract
-    input_arf=useresponse.FindResponse
-    input_response=ddosa.ISGRIResponse
+    input_response=useresponse.RebinResponse
+    #input_response=useresponse.FindResponse
+    #input_response=ddosa.ISGRIResponse
 
 
     def main(self):
@@ -59,7 +60,7 @@ class ProcessSpectra(ddosa.DataAnalysis):
             fn="isgri_spectrum_%s.fits"%sname.replace(" ","_")
 
             #hdu.header['ANCRFILE']=self.input_arf.arf_path
-            hdu.header['RESPFILE']=self.input_response.path
+            hdu.header['RESPFILE']=self.input_response.rmf_path
 
             print("source:",sname,"to",fn)
             print(hdu.header['RESPFILE'])
