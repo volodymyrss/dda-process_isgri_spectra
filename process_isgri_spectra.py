@@ -61,9 +61,14 @@ class ProcessSpectra(ddosa.DataAnalysis):
 
             #hdu.header['ANCRFILE']=self.input_arf.arf_path
             hdu.header['RESPFILE']=self.input_response.rmf_path
+            if hdu.header['RESPFILE'][-1]=="&":
+                hdu.header['RESPFILE']=hdu.header['RESPFILE'][:-1]
+
+            if not os.path.exists(hdu.header['RESPFILE']):
+                raise Exception("no rsp file")
 
             print("source:",sname,"to",fn)
-            print(hdu.header['RESPFILE'])
+            print("response",hdu.header['RESPFILE'])
             print(hdu.header['ANCRFILE'])
             hdu.writeto(fn,clobber=True)
             setattr(self,fn,da.DataFile(fn))
