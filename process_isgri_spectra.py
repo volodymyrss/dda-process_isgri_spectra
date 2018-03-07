@@ -343,16 +343,6 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
 import dataanalysis.callback
 
-class CallbackRareDDOSAFilter(dataanalysis.callback.Callback):
-    def extract_data(self,obj):
-        scw=obj.cache.get_scw(obj._da_locally_complete)
-        if scw is None:
-            scw=obj.cache.get_scw(getattr(obj,'_da_expected_full_hashe',None))
-        if scw is None:
-            return {}
-        return {"scwid":scw}
-
-dataanalysis.callback.default_callback_filter=CallbackRareDDOSAFilter
-CallbackRareDDOSAFilter.set_callback_accepted_classes([ddosa.mosaic_ii_skyimage, ddosa.ii_skyimage, ddosa.BinEventsImage, ddosa.ibis_gti, ddosa.ibis_dead, ddosa.ISGRIEvents, ddosa.ii_spectra_extract, ddosa.BinEventsSpectra, ddosa.ii_lc_extract, ddosa.BinEventsLC, ISGRISpectraSum])
+dataanalysis.callback.default_callback_filter.set_callback_accepted_classes([ddosa.mosaic_ii_skyimage, ddosa.ii_skyimage, ddosa.BinEventsImage, ddosa.ibis_gti, ddosa.ibis_dead, ddosa.ISGRIEvents, ddosa.ii_spectra_extract, ddosa.BinEventsSpectra, ddosa.ii_lc_extract, ddosa.BinEventsLC, ISGRISpectraSum])
 
 
