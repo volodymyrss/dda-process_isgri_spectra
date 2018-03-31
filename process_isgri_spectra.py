@@ -331,6 +331,6 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 #            print(l[0] #,l[1].shape)
 
 
-import dataanalysis.callback$                                                                                                                                                                                  
+import dataanalysis.callback
 
-dataanalysis.callback.default_callback_filter.set_callback_accepted_classes([ISGRISpectraSum])$ 
+dataanalysis.callback.default_callback_filter.set_callback_accepted_classes([ISGRISpectraSum])
