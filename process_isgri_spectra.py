@@ -281,6 +281,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
                 arf_fn=None
             
             print("response keys",len(spectrum[5].keys()),spectrum[5].keys())
+            spectrum[5]=dict(spectrum[5].items()[:1])
 
             assert(len(spectrum[5].keys())==1)
             rmf_fn="rmf_sum_%s.fits"%source_short_name
