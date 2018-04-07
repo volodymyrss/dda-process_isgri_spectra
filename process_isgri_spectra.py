@@ -88,7 +88,7 @@ class ScWSpectraList(ddosa.DataAnalysis):
     maxspec=None
 
     def main(self):
-        self.spectra=[[ddosa.ii_spectra_extract(assume=scw),useresponse.FindResponse(assume=scw),ddosa.ISGRIResponse(assume=scw)] for scw in self.input_scwlist.scwlistdata]
+        self.spectra=[[ddosa.ii_spectra_extract(assume=scw),useresponse.RebinResponse(assume=scw),ddosa.ISGRIResponse(assume=scw)] for scw in self.input_scwlist.scwlistdata]
 
         if len(self.spectra)==0:
             raise ddosa.EmptyScWList()
@@ -164,7 +164,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
     cached=True
 
-    version="v5.4"
+    version="v5.5"
 
     sources=['Crab']
 
@@ -193,7 +193,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
         t0=time.time()
         i_spec=1
 
-        for spectrum,arf,rmf in choice:
+        for spectrum,rmf,arf in choice:
             if hasattr(spectrum,'empty_results'):
                 print("skipping",spectrum)
                 continue
@@ -240,8 +240,12 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
                         spectra[name][1]=1/(1/spectra[name][1]+1/err**2)
                         spectra[name][2]+=exposure
 
-                    arf_path=arf.arf_path
-                    rmf_path=rmf.path
+                    if hasattr(arf,'arf_path'):
+                        arf_path=arf.arf_path
+                    else:
+                        arf_path=None
+
+                    rmf_path=rmf.rmf.get_path()
 
                     spectra[name][4][arf_path]+=exposure
                     spectra[name][5][rmf_path]+=exposure
@@ -269,8 +273,12 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
             source_short_name=name.strip().replace(" ","_")
 
             assert(len(spectrum[4].keys())==1)
-            arf_fn="arf_sum_%s.fits"%source_short_name
-            fits.open(spectrum[4].keys()[0]).writeto(arf_fn,clobber=True)
+
+            if spectrum[4].keys()[0] is not None:
+                arf_fn="arf_sum_%s.fits"%source_short_name
+                fits.open(spectrum[4].keys()[0]).writeto(arf_fn,clobber=True)
+            else:
+                arf_fn=None
             
             assert(len(spectrum[5].keys())==1)
             rmf_fn="rmf_sum_%s.fits"%source_short_name
@@ -328,7 +336,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
             if arf_fn is not None:
                 setattr(self,arf_fn.replace(".fits",""),da.DataFile(arf_fn))
 
-            self.extracted_sources.append([name,fn.replace(".fits",""),rmf_fn.replace(".fits",""),arf_fn.replace(".fits","")])
+            self.extracted_sources.append([name,fn.replace(".fits",""),rmf_fn.replace(".fits",""),arf_fn.replace(".fits","") if arf_fn is not None else ""])
 
         self.source_results=source_results
 
