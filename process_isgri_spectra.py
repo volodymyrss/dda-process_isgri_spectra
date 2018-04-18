@@ -16,7 +16,7 @@ from collections import defaultdict
 
 import useresponse
 
-class MultiEpochNotSupported(da.AnalysisException):
+class MultiEpochRMFNotSupported(da.AnalysisException):
     pass
 
 try:
@@ -153,7 +153,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
     input_response=ddosa.SpectraBins
 
-    input_efficiency=SpectrumEfficiencyCorrection
+    #input_efficiency=SpectrumEfficiencyCorrection
 
     copy_cached_input=False
 
@@ -161,7 +161,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
     cached=True
 
-    version="v5.4.1"
+    version="v5.4.2"
 
     sources=['Crab']
 
@@ -262,18 +262,45 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
         for name,spectrum in spectra.items():
             source_short_name=name.strip().replace(" ","_")
 
-            if len(spectrum[5].keys())>1 or len(spectrum[4].keys())>1:
-                raise MultiEpochNotSupported()
+           # if len(spectrum[5].keys())>1 or len(spectrum[4].keys())>1:
+           #     raise MultiEpochNotSupported()
+
+            # sum arf
+
+            arfs=sorted(spectrum[4].items())
+            print("got",len(arfs),"arfs:")
+            for arf_fn,arf_exposure in arfs:
+                print(arf_fn,arf_exposure)
+
+            print("summing arfs")
+            arf_first=fits.open(arfs[0][0])
+            arf_first[1].data['SPECRESP']*=arfs[0][1]
+            total_exposure=arfs[0][1]
+            print("arf:",arfs[0][0],arf_first[1].data['SPECRESP'].max(),"cm**2 * s")
+
+            for arf_fn,arf_exposure in arfs[1:]:
+                arf_f=fits.open(arf_fn)
+                arf_first[1].data['SPECRESP']+=arf_f[1].data['SPECRESP']*arf_exposure
+                total_exposure+=arf_exposure
+                print("arf:",arf_fn,arf_f[1].data['SPECRESP'].max()*arf_exposure,"cm**2 * s")
+            arf_first[1].data['SPECRESP']/=total_exposure
+                
+
+            if len(spectrum[5].keys())>1:
+                raise MultiEpochRMFNotSupported()
 
             arf_fn="arf_sum_%s.fits"%source_short_name
-            fits.open(spectrum[4].keys()[0]).writeto(arf_fn,clobber=True)
+            #fits.open(spectrum[4].keys()[0]).writeto(arf_fn,clobber=True)
+            arf_first.writeto(arf_fn,clobber=True)
+            print("total arf:",arf_fn,arf_first[1].data['SPECRESP'].max()*total_exposure,"cm**2 * s")
             
 
             rmf_fn="rmf_sum_%s.fits"%source_short_name
             fits.open(spectrum[5].keys()[0]).writeto(rmf_fn,clobber=True)
             
 
-            spectrum[3].data['RATE'][:],spectrum[3].data['STAT_ERR'][:]=self.input_efficiency.correct(spectrum[0][:],(spectrum[1]**0.5)[:])
+            #spectrum[3].data['RATE'][:],spectrum[3].data['STAT_ERR'][:]=self.input_efficiency.correct(spectrum[0][:],(spectrum[1]**0.5)[:])
+            spectrum[3].data['RATE'][:],spectrum[3].data['STAT_ERR'][:]=spectrum[0][:],(spectrum[1]**0.5)[:]
             spectrum[3].header['EXPOSURE']=spectrum[2]
             #spectrum[3].header['RESPFILE']=self.input_response.binrmf
 
@@ -302,7 +329,9 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
                 lc_t1,lc_t2,lc_f,lc_fe=map(array,zip(*lc))
 
                 if self.save_lc:
-                    savetxt("%s_%.5lg_%.5lg.txt"%(name.replace(" ","_"),erange[0],erange[1]),column_stack((lc_t1,lc_t2,lc_f,lc_fe)))
+                    lc_fn="%s_%.5lg_%.5lg.txt"%(name.replace(" ","_"),erange[0],erange[1])
+                    savetxt(lc_fn,column_stack((lc_t1,lc_t2,lc_f,lc_fe)))
+                    setattr(self,lc_fn.replace(".txt",""),da.DataFile(lc_fn))
 
                 varamp=std(lc_f)
                 #varfrac=std(lc_f)/average(lc_fe**2)**0.5
@@ -333,6 +362,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
         for sr in source_results:
             srf.write(sr[0].replace(" ","_")+" "+" ".join(["%.5lg"%s for s in sr[1:]])+"\n")
 
+        self.source_summary=da.DataFile("source_summary.txt")
             
  #       for l in allsource_summary:
 #            print(l[0] #,l[1].shape)
