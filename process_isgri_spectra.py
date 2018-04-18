@@ -16,6 +16,9 @@ from collections import defaultdict
 
 import useresponse
 
+class MultiEpochNotSupported(da.AnalysisException):
+    pass
+
 try:
     import crab
 except:
@@ -259,11 +262,13 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
         for name,spectrum in spectra.items():
             source_short_name=name.strip().replace(" ","_")
 
-            assert(len(spectrum[4].keys())==1)
+            if len(spectrum[5].keys())>1 or len(spectrum[4].keys())==1:
+                raise MultiEpochNotSupported()
+
             arf_fn="arf_sum_%s.fits"%source_short_name
             fits.open(spectrum[4].keys()[0]).writeto(arf_fn,clobber=True)
             
-            assert(len(spectrum[5].keys())==1)
+
             rmf_fn="rmf_sum_%s.fits"%source_short_name
             fits.open(spectrum[5].keys()[0]).writeto(rmf_fn,clobber=True)
             
