@@ -165,7 +165,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
     sources=['Crab']
 
-    extract_all=False
+    extract_all=True
     save_lc=True
 
     def get_version(self):
@@ -282,6 +282,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
             fn="isgri_sum_%s.fits"%source_short_name
             spectrum[3].writeto(fn,clobber=True)
+            print("writing",fn)
 
 
             select_range=lambda x,a,b:((eb1>a) & (eb2<b) & ~isnan(x) & ~isinf(x))
@@ -331,6 +332,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
         srf=open("source_summary.txt","w")
         for sr in source_results:
             srf.write(sr[0].replace(" ","_")+" "+" ".join(["%.5lg"%s for s in sr[1:]])+"\n")
+
             
  #       for l in allsource_summary:
 #            print(l[0] #,l[1].shape)
