@@ -191,7 +191,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
         i_spec=1
 
         for spectrum,arf,rmf in choice:
-            if hasattr(spectrum,'empty_results'):
+            if hasattr(spectrum,'empty_results') or not hasattr(spectrum,'spectrum'):
                 print("skipping",spectrum)
                 continue
 
