@@ -161,7 +161,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
     cached=True
 
-    version="v5.4"
+    version="v5.4.1"
 
     sources=['Crab']
 
@@ -262,7 +262,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
         for name,spectrum in spectra.items():
             source_short_name=name.strip().replace(" ","_")
 
-            if len(spectrum[5].keys())>1 or len(spectrum[4].keys())==1:
+            if len(spectrum[5].keys())>1 or len(spectrum[4].keys())>1:
                 raise MultiEpochNotSupported()
 
             arf_fn="arf_sum_%s.fits"%source_short_name
