@@ -200,6 +200,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
             if not hasattr(spectrum,'spectrum'):
                 print("skipping",spectrum)
+                continue
 
             fn=spectrum.spectrum.get_path()
             print("%i/%i"%(i_spec,len(choice)))
