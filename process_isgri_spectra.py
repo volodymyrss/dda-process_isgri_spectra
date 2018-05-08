@@ -229,8 +229,10 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
                     rate=e.data['RATE']
                     err=e.data['STAT_ERR']
                     exposure=e.header['EXPOSURE']
+                    ontime=e.header['ONTIME']
+                    telapse=e.header['TELAPSE']
                     if name not in spectra:
-                        spectra[name]=[rate,err**2,exposure,e,defaultdict(int),defaultdict(int)]
+                        spectra[name]=[rate,err**2,exposure,e,defaultdict(int),defaultdict(int),ontime,telapse]
                         preserve_file=True
                     else:
                         err[isnan(err) | (err==0)]=inf
@@ -239,6 +241,8 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
                         #spectra[name][0]=(spectra[name][0]/spectra[name][1]+rate/err**2)/(1/spectra[name][1]+1/err**2)
                         spectra[name][1]=1/(1/spectra[name][1]+1/err**2)
                         spectra[name][2]+=exposure
+                        spectra[name][6]+=ontime
+                        spectra[name][7]+=telapse
 
                     arf_path=arf.arf_path
                     rmf_path=rmf.path
@@ -279,6 +283,8 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
             spectrum[3].data['RATE'][:],spectrum[3].data['STAT_ERR'][:]=self.input_efficiency.correct(spectrum[0][:],(spectrum[1]**0.5)[:])
             spectrum[3].header['EXPOSURE']=spectrum[2]
+            spectrum[3].header['ONTIME']=spectrum[6]
+            spectrum[3].header['TELAPSE']=spectrum[7]
             #spectrum[3].header['RESPFILE']=self.input_response.binrmf
 
             spectrum[3].header['RESPFILE']=rmf_fn
