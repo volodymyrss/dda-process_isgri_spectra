@@ -3,6 +3,7 @@ from __future__ import print_function
 import ddosa 
 from astropy.io import fits 
 from bcolors import render
+import datetime
 import subprocess
 import os
 
@@ -190,6 +191,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
         t0=time.time()
         i_spec=1
 
+
         for spectrum,arf,rmf in choice:
             if hasattr(spectrum,'empty_results') or not hasattr(spectrum,'spectrum'):
                 print("skipping",spectrum)
@@ -223,10 +225,14 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
                     rate=e.data['RATE']
                     err=e.data['STAT_ERR']
                     exposure=e.header['EXPOSURE']
+                    exp_src=e.header['EXP_SRC']
                     ontime=e.header['ONTIME']
                     telapse=e.header['TELAPSE']
+                    tstart=e.header['TSTART']
+                    tstop=e.header['TSTOP']
+                    revol=e.header['REVOL']
                     if name not in spectra:
-                        spectra[name]=[rate,err**2,exposure,e,defaultdict(int),defaultdict(int),ontime,telapse]
+                        spectra[name]=[rate,err**2,exposure,e,defaultdict(int),defaultdict(int),ontime,telapse,tstart,tstop,[revol],exp_src]
                         preserve_file=True
                     else:
                         err[isnan(err) | (err==0)]=inf
@@ -237,6 +243,11 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
                         spectra[name][2]+=exposure
                         spectra[name][6]+=ontime
                         spectra[name][7]+=telapse
+                        spectra[name][8]=min(spectra[name][8],tstart)
+                        spectra[name][9]=max(spectra[name][9],tstop)
+                        if revol not in spectra[name][10]:
+                            spectra[name][10].append(revol)
+                        spectra[name][11]+=exp_src
 
                     arf_path=arf.arf_path
                     rmf_path=rmf.path
@@ -308,13 +319,36 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
             spectrum[3].header['EXPOSURE']=spectrum[2]
             spectrum[3].header['ONTIME']=spectrum[6]
             spectrum[3].header['TELAPSE']=spectrum[7]
+            spectrum[3].header['EXP_SRC']=spectrum[11]
             #spectrum[3].header['RESPFILE']=self.input_response.binrmf
 
             spectrum[3].header['RESPFILE']=rmf_fn
             spectrum[3].header['ANCRFILE']=arf_fn
 
+            spectrum[3].header['CREATOR']=self.get_version()
+            spectrum[3].header['DATE']=datetime.datetime.now().isoformat()
+
+            if len(spectrum[10])==1:
+                spectrum[3].header['REVOL']=spectrum[10][0]
+            else:
+                del spectrum[3].header['REVOL']
+                spectrum[3].header['REVOLUTIONS']=",".join("%.4i"%r for r in spectrum[10])
+
+            del spectrum[3].header['SWID']
+            del spectrum[3].header['SWBOUND']
+            del spectrum[3].header['OBTSTART']
+            del spectrum[3].header['OBTEND']
+            spectrum[3].header['TSTART']=spectrum[8]
+            spectrum[3].header['TSTOP']=spectrum[9]
+            del spectrum[3].header['TFIRST']
+            del spectrum[3].header['TLAST']
+            del spectrum[3].header['Y_FIN']
+            del spectrum[3].header['Z_FIN']
+            spectrum[3].header['STAMP']=None
+
+
             fn="isgri_sum_%s.fits"%source_short_name
-            spectrum[3].writeto(fn,clobber=True)
+            spectrum[3].writeto(fn, clobber=True, checksum=True)
             print("writing",fn)
 
 
