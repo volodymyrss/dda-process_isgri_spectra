@@ -280,6 +280,31 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
             spectrum[3].header['RESPFILE']=rmf_fn
             spectrum[3].header['ANCRFILE']=arf_fn
 
+            spectrum[3].header['CREATOR']=self.get_version()
+            spectrum[3].header['DATE']=datetime.datetime.now().isoformat()
+
+            if len(spectrum[10])==1:
+                spectrum[3].header['REVOL']=spectrum[10][0]
+            else:
+                del spectrum[3].header['REVOL']
+                if len(spectrum[10])<4:
+                    spectrum[3].header['REVOLS']=",".join("%.4i"%r for r in spectrum[10])
+                else:
+                    spectrum[3].header['REVOLS']="%.4i..%.4i"%(sorted(spectrum[10])[0],sorted(spectrum[10])[-1])
+
+            del spectrum[3].header['SWID']
+            del spectrum[3].header['SWBOUND']
+            del spectrum[3].header['OBTSTART']
+            del spectrum[3].header['OBTEND']
+            spectrum[3].header['TSTART']=spectrum[8]
+            spectrum[3].header['TSTOP']=spectrum[9]
+            del spectrum[3].header['TFIRST']
+            del spectrum[3].header['TLAST']
+            del spectrum[3].header['Y_FIN']
+            del spectrum[3].header['Z_FIN']
+            spectrum[3].header['STAMP']=None
+
+
             fn="isgri_sum_%s.fits"%source_short_name
             spectrum[3].writeto(fn,clobber=True)
 
