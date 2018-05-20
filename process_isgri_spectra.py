@@ -320,7 +320,10 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
                 spectrum[3].header['REVOL']=spectrum[10][0]
             else:
                 del spectrum[3].header['REVOL']
-                spectrum[3].header['REVOLUTIONS']=",".join("%.4i"%r for r in spectrum[10])
+                if len(spectrum[10])<4:
+                    spectrum[3].header['REVOLS']=",".join("%.4i"%r for r in spectrum[10])
+                else:
+                    spectrum[3].header['REVOLS']="%.4i..%.4i"%(sorted(spectrum[10])[0],sorted(spectrum[10])[-1])
 
             del spectrum[3].header['SWID']
             del spectrum[3].header['SWBOUND']
