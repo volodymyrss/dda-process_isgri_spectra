@@ -165,7 +165,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
     sources=['Crab']
 
-    extract_all=False
+    extract_all=True
     save_lc=True
 
     def get_version(self):
