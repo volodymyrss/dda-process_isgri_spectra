@@ -7,6 +7,8 @@ import datetime
 import subprocess
 import os
 
+import heaspa
+
 try:
     from dataanalysis import core as da
 except ImportError:
@@ -76,7 +78,6 @@ class ProcessSpectra(ddosa.DataAnalysis):
 
 
 
-
 class ScWSpectraList(ddosa.DataAnalysis):
     input_scwlist=ddosa.RevScWList
     copy_cached_input=False
@@ -89,7 +90,7 @@ class ScWSpectraList(ddosa.DataAnalysis):
     maxspec=None
 
     def main(self):
-        self.spectra=[[ddosa.ii_spectra_extract(assume=scw),useresponse.RebinResponse(assume=scw),ddosa.ISGRIResponse(assume=scw)] for scw in self.input_scwlist.scwlistdata]
+        self.spectra=[[ddosa.ii_spectra_extract(assume=scw),useresponse.RebinResponse(assume=scw),ddosa.ISGRIResponse(assume=scw),ddosa.BinEventsSpectra(assume=scw)] for scw in self.input_scwlist.scwlistdata]
 
         if len(self.spectra)==0:
             raise ddosa.EmptyScWList()
@@ -194,7 +195,25 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
         t0=time.time()
         i_spec=1
 
-        for spectrum,rmf,arf in choice:
+        total_spectrum_summed=None
+        total_exposure=0
+
+        for spectrum,arf,rmf,total in choice:
+
+            f=fits.open(total.shadow_detector.get_path())
+
+            total_spectrum=[]
+            for ex in f[2:]:
+                total_spectrum.append(e.data.sum())
+            total_spectrum=array(total_spectrum)
+
+            if total_spectrum_summed is None:
+                total_spectrum_summed=total_spectrum
+                total_exposure=ex.header['EXPOSURE']
+            else:
+                total_spectrum_summed+=total_spectrum
+                total_exposure+=ex.header['EXPOSURE']
+
             if hasattr(spectrum,'empty_results'):
                 print("skipping",spectrum)
                 continue
@@ -390,6 +409,10 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
         srf=open("source_summary.txt","w")
         for sr in source_results:
             srf.write(sr[0].replace(" ","_")+" "+" ".join(["%.5lg"%s for s in sr[1:]])+"\n")
+
+        total_fn="total_spectrum.fits"
+        heaspa.PHA(total_spectrum_summed,exposure=total_exposure).write(total_fn)
+        self.total=da.DataFile(total_fn)
             
  #       for l in allsource_summary:
 #            print(l[0] #,l[1].shape)
