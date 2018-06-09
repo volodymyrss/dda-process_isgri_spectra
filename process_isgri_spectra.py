@@ -166,7 +166,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
     cached=True
 
-    version="v5.5"
+    version="v5.6"
 
     sources=['Crab']
 
