@@ -200,6 +200,14 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
         for spectrum,rmf,arf,total in choice:
 
+            if hasattr(spectrum,'empty_results'):
+                print("skipping",spectrum)
+                continue
+
+            if not hasattr(spectrum,'spectrum'):
+                print("skipping",spectrum)
+                continue
+            
             f=fits.open(total.shadow_detector.get_path())
 
             total_spectrum=[]
@@ -213,14 +221,6 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
             else:
                 total_spectrum_summed+=total_spectrum
                 total_exposure+=ex.header['EXPOSURE']
-
-            if hasattr(spectrum,'empty_results'):
-                print("skipping",spectrum)
-                continue
-
-            if not hasattr(spectrum,'spectrum'):
-                print("skipping",spectrum)
-                continue
 
             fn=spectrum.spectrum.get_path()
             print("%i/%i"%(i_spec,len(choice)))
