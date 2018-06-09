@@ -63,7 +63,7 @@ class ProcessSpectra(ddosa.DataAnalysis):
             fn="isgri_spectrum_%s.fits"%sname.replace(" ","_")
 
             #hdu.header['ANCRFILE']=self.input_arf.arf_path
-            hdu.header['RESPFILE']=self.input_response.rmf_path
+            hdu.header['RESPFILE']=self.input_response.rmf_path()
             if hdu.header['RESPFILE'][-1]=="&":
                 hdu.header['RESPFILE']=hdu.header['RESPFILE'][:-1]
 
@@ -198,13 +198,13 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
         total_spectrum_summed=None
         total_exposure=0
 
-        for spectrum,arf,rmf,total in choice:
+        for spectrum,rmf,arf,total in choice:
 
             f=fits.open(total.shadow_detector.get_path())
 
             total_spectrum=[]
             for ex in f[2:]:
-                total_spectrum.append(e.data.sum())
+                total_spectrum.append(ex.data.sum())
             total_spectrum=array(total_spectrum)
 
             if total_spectrum_summed is None:
@@ -319,6 +319,8 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
             assert(len(spectrum[5].keys())==1)
             rmf_fn="rmf_sum_%s.fits"%source_short_name
+
+            print("writing:",spectrum[5].keys()[0],"to",rmf_fn)
             fits.open(spectrum[5].keys()[0]).writeto(rmf_fn,clobber=True)
             
 
@@ -411,7 +413,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
             srf.write(sr[0].replace(" ","_")+" "+" ".join(["%.5lg"%s for s in sr[1:]])+"\n")
 
         total_fn="total_spectrum.fits"
-        heaspa.PHA(total_spectrum_summed,exposure=total_exposure).write(total_fn)
+        heaspa.PHA(total_spectrum_summed,total_spectrum_summed**0.5,exposure=total_exposure).write(total_fn)
         self.total=da.DataFile(total_fn)
             
  #       for l in allsource_summary:
