@@ -216,10 +216,10 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
             total_spectrum=array(total_spectrum)
 
             if total_spectrum_summed is None:
-                total_spectrum_summed=total_spectrum
+                total_spectrum_summed=total_spectrum.astype(float)
                 total_exposure=ex.header['EXPOSURE']
             else:
-                total_spectrum_summed+=total_spectrum
+                total_spectrum_summed+=total_spectrum.astype(float)
                 total_exposure+=ex.header['EXPOSURE']
 
             fn=spectrum.spectrum.get_path()
