@@ -240,6 +240,12 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
             t1,t2=f[1].header['TSTART'],f[1].header['TSTOP']
             print(t1,t2)
 
+            try:
+                print("found extensions",len(list(f)))
+            except Exception in e:
+                print("failed to see extensions",e)
+                continue
+
             for e in f:
                 try:
                     if e.header['EXTNAME']!="ISGR-EVTS-SPE": continue
