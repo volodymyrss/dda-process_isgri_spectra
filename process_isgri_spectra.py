@@ -166,7 +166,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
     cached=True
 
-    version="v5.6"
+    version="v5.7"
 
     sources=['Crab']
 
@@ -215,10 +215,13 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
                 total_spectrum.append(ex.data.sum())
             total_spectrum=array(total_spectrum)
 
+
             if total_spectrum_summed is None:
                 total_spectrum_summed=total_spectrum.astype(float)
                 total_exposure=ex.header['EXPOSURE']
             else:
+                if len(total_spectrum)!=len(total_spectrum_summed):
+                    print("problem adding total",len(total_spectrum),"to total summed",len(total_spectrum_summed))
                 total_spectrum_summed+=total_spectrum.astype(float)
                 total_exposure+=ex.header['EXPOSURE']
 
@@ -413,7 +416,14 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
             srf.write(sr[0].replace(" ","_")+" "+" ".join(["%.5lg"%s for s in sr[1:]])+"\n")
 
         total_fn="total_spectrum.fits"
-        heaspa.PHA(total_spectrum_summed,total_spectrum_summed**0.5,exposure=total_exposure).write(total_fn)
+
+        spec=spectrum[3]
+        spec.data['RATE']=total_spectrum_summed/total_exposure
+        spec.data['STAT_ERR']=total_spectrum_summed**0.5/total_exposure
+        spec.header['EXPOSURE']=total_exposure
+        spec.header['NAME']='Total'
+        spec.writeto(total_fn,overwrite=True)
+        #heaspa.PHA(total_spectrum_summed,total_spectrum_summed**0.5,exposure=total_exposure).write(total_fn)
         self.total=da.DataFile(total_fn)
             
  #       for l in allsource_summary:
