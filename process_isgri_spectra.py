@@ -199,6 +199,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
         total_exposure=0
 
         for spectrum,rmf,arf,total in choice:
+            print("processing",spectrum,rmf,arf,total)
 
             if hasattr(spectrum,'empty_results'):
                 print("skipping",spectrum)
@@ -222,6 +223,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
             else:
                 if len(total_spectrum)!=len(total_spectrum_summed):
                     print("problem adding total",len(total_spectrum),"to total summed",len(total_spectrum_summed))
+                    continue
                 total_spectrum_summed+=total_spectrum.astype(float)
                 total_exposure+=ex.header['EXPOSURE']
 
