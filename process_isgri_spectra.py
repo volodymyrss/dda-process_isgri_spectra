@@ -275,7 +275,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
         self.extracted_sources=[]
 
         for name,spectrum in spectra.items():
-            source_short_name=name.strip().replace(" ","_")
+            source_short_name=name.strip().replace(" ","_").replace("/","")
 
            # if len(spectrum[5].keys())>1 or len(spectrum[4].keys())>1:
            #     raise MultiEpochNotSupported()
@@ -306,11 +306,12 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
             arf_fn="arf_sum_%s.fits"%source_short_name
             #fits.open(spectrum[4].keys()[0]).writeto(arf_fn,clobber=True)
-            arf_first.writeto(arf_fn,clobber=True)
             print("total arf:",arf_fn,arf_first[1].data['SPECRESP'].max()*total_exposure,"cm**2 * s")
+            arf_first.writeto(arf_fn,clobber=True)
             
 
             rmf_fn="rmf_sum_%s.fits"%source_short_name
+            print("individual rmf",spectrum[5].keys()[0])
             fits.open(spectrum[5].keys()[0]).writeto(rmf_fn,clobber=True)
             
 
@@ -372,7 +373,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
                 lc_t1,lc_t2,lc_f,lc_fe=map(array,zip(*lc))
 
                 if self.save_lc:
-                    lc_fn="%s_%.5lg_%.5lg.txt"%(name.replace(" ","_"),erange[0],erange[1])
+                    lc_fn="%s_%.5lg_%.5lg.txt"%(source_short_name,erange[0],erange[1])
                     savetxt(lc_fn,column_stack((lc_t1,lc_t2,lc_f,lc_fe)))
                     setattr(self,lc_fn.replace(".txt",""),da.DataFile(lc_fn))
 
