@@ -7,6 +7,7 @@ import datetime
 import subprocess
 import os
 
+import pilton
 import heaspa
 
 try:
@@ -166,7 +167,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
     cached=True
 
-    version="v5.8"
+    version="v5.8.1"
 
     sources=['Crab']
 
@@ -323,7 +324,26 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
                 arf_fn="arf_sum_%s.fits"%source_short_name
                 fits.open(spectrum[4].keys()[0]).writeto(arf_fn,clobber=True)
             else:
-                arf_fn=None
+                arf_fn="arf_sum_%s.fits"%source_short_name
+                dc=pilton.heatool("dal_create")
+                dc['obj_name']=arf_fn
+                dc['template']="ISGR-ARF.-RSP.tpl"
+
+                ddosa.remove_withtemplate(arf_fn+"(ISGR-ARF.-RSP.tpl)")
+                dc.run()
+
+                _rmf=fits.open(spectrum[5].keys()[0])
+
+                _arf=fits.open(arf_fn)
+                _arf[1].data=zeros(len(_rmf['ISGR-RMF.-RSP'].data['ENERG_LO']),dtype=_arf[1].data.dtype)
+
+                _arf[1].data['ENERG_LO']=_rmf['ISGR-RMF.-RSP'].data['ENERG_LO']
+                _arf[1].data['ENERG_HI']=_rmf['ISGR-RMF.-RSP'].data['ENERG_HI']
+                _arf[1].data['SPECRESP']=1.
+                _arf.writeto(arf_fn,overwrite=True)
+
+                #fits.open(arf_fn)
+                #arf_fn=None
             
             print("response keys",len(spectrum[5].keys()),spectrum[5].keys())
             spectrum[5]=dict(spectrum[5].items()[:1])
