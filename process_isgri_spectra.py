@@ -91,7 +91,7 @@ class ScWSpectraList(ddosa.DataAnalysis):
     maxspec=None
 
     def main(self):
-        self.spectra=[[ddosa.ii_spectra_extract(assume=scw),useresponse.RebinResponse(assume=scw),ddosa.ISGRIResponse(assume=scw),ddosa.BinEventsSpectra(assume=scw)] for scw in self.input_scwlist.scwlistdata]
+        self.spectra=[[ddosa.ii_spectra_extract(assume=scw),useresponse.RebinResponse(assume=scw),ddosa.ISGRIResponse(assume=scw)] for scw in self.input_scwlist.scwlistdata]
 
         if len(self.spectra)==0:
             raise ddosa.EmptyScWList()
@@ -196,11 +196,8 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
         t0=time.time()
         i_spec=1
 
-        total_spectrum_summed=None
-        total_exposure=0
-
-        for spectrum,rmf,arf,total in choice:
-            print("processing",spectrum,rmf,arf,total)
+        for spectrum,rmf,arf in choice:
+            print("processing",spectrum,rmf,arf)
 
             if hasattr(spectrum,'empty_results'):
                 print("skipping",spectrum)
@@ -210,24 +207,6 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
                 print("skipping",spectrum)
                 continue
             
-            f=fits.open(total.shadow_detector.get_path())
-
-            total_spectrum=[]
-            for ex in f[2:]:
-                total_spectrum.append(ex.data.sum())
-            total_spectrum=array(total_spectrum)
-
-
-            if total_spectrum_summed is None:
-                total_spectrum_summed=total_spectrum.astype(float)
-                total_exposure=ex.header['EXPOSURE']
-            else:
-                if len(total_spectrum)!=len(total_spectrum_summed):
-                    print("problem adding total",len(total_spectrum),"to total summed",len(total_spectrum_summed))
-                    continue
-                total_spectrum_summed+=total_spectrum.astype(float)
-                total_exposure+=ex.header['EXPOSURE']
-
             fn=spectrum.spectrum.get_path()
             print("%i/%i"%(i_spec,len(choice)))
             tc=time.time()
@@ -443,16 +422,8 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
         for sr in source_results:
             srf.write(sr[0].replace(" ","_")+" "+" ".join(["%.5lg"%s for s in sr[1:]])+"\n")
 
-        total_fn="total_spectrum.fits"
 
-        spec=spectrum[3]
-        spec.data['RATE']=total_spectrum_summed/total_exposure
-        spec.data['STAT_ERR']=total_spectrum_summed**0.5/total_exposure
-        spec.header['EXPOSURE']=total_exposure
-        spec.header['NAME']='Total'
-        spec.writeto(total_fn,overwrite=True)
         #heaspa.PHA(total_spectrum_summed,total_spectrum_summed**0.5,exposure=total_exposure).write(total_fn)
-        self.total=da.DataFile(total_fn)
             
  #       for l in allsource_summary:
 #            print(l[0] #,l[1].shape)
