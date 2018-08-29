@@ -167,7 +167,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
     cached=True
 
-    version="v5.8.1"
+    version="v5.8.2"
 
     sources=['Crab']
 
@@ -368,6 +368,9 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
             del spectrum[3].header['Z_FIN']
             spectrum[3].header['STAMP']=None
 
+
+            _rmf=fits.open(spectrum[5].keys()[0])
+            spectrum[3].data['QUALITY'][_rmf[1].data['E_MIN']<30]=3
 
             fn="isgri_sum_%s.fits"%source_short_name
             spectrum[3].writeto(fn, clobber=True, checksum=True)
