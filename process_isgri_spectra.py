@@ -295,7 +295,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
         self.extracted_sources=[]
 
         for name,spectrum in spectra.items():
-            source_short_name=name.strip().replace(" ","_")
+            source_short_name=name.strip().replace(" ","_").replace("/","_")
 
             assert(len(spectrum[4].keys())==1)
 
