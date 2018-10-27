@@ -394,7 +394,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
                 lc_t1,lc_t2,lc_f,lc_fe=map(array,zip(*lc))
 
                 if self.save_lc:
-                    savetxt("%s_%.5lg_%.5lg.txt"%(name.replace(" ","_"),erange[0],erange[1]),column_stack((lc_t1,lc_t2,lc_f,lc_fe)))
+                    savetxt("%s_%.5lg_%.5lg.txt"%(source_short_name,erange[0],erange[1]),column_stack((lc_t1,lc_t2,lc_f,lc_fe)))
 
                 varamp=std(lc_f)
                 #varfrac=std(lc_f)/average(lc_fe**2)**0.5
