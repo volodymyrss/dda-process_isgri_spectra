@@ -274,11 +274,11 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
             assert(len(spectrum[4].keys())==1)
             arf_fn="arf_sum_%s.fits"%source_short_name
-            fits.open(spectrum[4].keys()[0]).writeto(arf_fn,clobber=True)
+            fits.open(list(spectrum[4].keys())[0]).writeto(arf_fn,clobber=True)
             
             assert(len(spectrum[5].keys())==1)
             rmf_fn="rmf_sum_%s.fits"%source_short_name
-            fits.open(spectrum[5].keys()[0]).writeto(rmf_fn,clobber=True)
+            fits.open(list(spectrum[5].keys())[0]).writeto(rmf_fn,clobber=True)
             
 
             spectrum[3].data['RATE'][:],spectrum[3].data['STAT_ERR'][:]=self.input_efficiency.correct(spectrum[0][:],(spectrum[1]**0.5)[:])
