@@ -312,7 +312,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
             rmf_fn="rmf_sum_%s.fits"%source_short_name
             print("individual rmf",list(spectrum[5].keys())[0])
-            fits.open(list(spectrum[5].keys()[0])).writeto(rmf_fn,clobber=True)
+            fits.open(list(spectrum[5].keys())[0]).writeto(rmf_fn,clobber=True)
             
 
             #spectrum[3].data['RATE'][:],spectrum[3].data['STAT_ERR'][:]=self.input_efficiency.correct(spectrum[0][:],(spectrum[1]**0.5)[:])
