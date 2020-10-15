@@ -8,7 +8,7 @@ import subprocess
 import os
 
 import pilton
-import heaspa
+import ogip.spec
 
 try:
     from dataanalysis import core as da
