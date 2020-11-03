@@ -1,4 +1,4 @@
-from __future__ import print_function
+
 
 import ddosa 
 from astropy.io import fits 
@@ -144,7 +144,7 @@ class SpectrumEfficiencyCorrection(ddosa.DataAnalysis):
     def correct(self,r,e):
         if not self.enable: return r,e
 
-        e1,e2=map(array,zip(*self.input_bins.bins))
+        e1,e2=list(map(array,list(zip(*self.input_bins.bins))))
         ec=(e1+e2)/2.
 
         a = 13.0435898895737
@@ -291,17 +291,17 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
             except Exception as e:
                 print("unable to check open fds")
 
-        eb1,eb2=map(array,zip(*self.input_response.bins))
+        eb1,eb2=list(map(array,list(zip(*self.input_response.bins))))
 
         self.spectra=spectra
 
         source_results=[]
         self.extracted_sources=[]
 
-        for name,spectrum in spectra.items():
+        for name,spectrum in list(spectra.items()):
             source_short_name=name.strip().replace(" ","_").replace("/","_")
 
-            assert(len(spectrum[4].keys())==1)
+            assert(len(list(spectrum[4].keys()))==1)
 
             if list(spectrum[4].keys())[0] is not None:
                 arf_fn="arf_sum_%s.fits"%source_short_name
@@ -315,7 +315,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
                 ddosa.remove_withtemplate(arf_fn+"(ISGR-ARF.-RSP.tpl)")
                 dc.run()
 
-                _rmf=fits.open(spectrum[5].keys()[0])
+                _rmf=fits.open(list(spectrum[5].keys())[0])
 
                 _arf=fits.open(arf_fn)
                 _arf[1].data=zeros(len(_rmf['ISGR-RMF.-RSP'].data['ENERG_LO']),dtype=_arf[1].data.dtype)
@@ -328,10 +328,10 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
                 #fits.open(arf_fn)
                 #arf_fn=None
             
-            print("response keys",len(spectrum[5].keys()),list(spectrum[5].keys()))
-            spectrum[5]=dict(spectrum[5].items()[:1])
+            print("response keys",len(list(spectrum[5].keys())),list(spectrum[5].keys()))
+            spectrum[5]=dict(list(spectrum[5].items())[:1])
 
-            assert(len(spectrum[5].keys())==1)
+            assert(len(list(spectrum[5].keys()))==1)
             rmf_fn="rmf_sum_%s.fits"%source_short_name
 
             print("writing:",list(spectrum[5].keys())[0],"to",rmf_fn)
@@ -395,7 +395,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
                 lc=[(l[1],l[2],sum(l[3][m]),sum(l[4][m]**2)**0.5) for l in all_spectra]
 
-                lc_t1,lc_t2,lc_f,lc_fe=map(array,zip(*lc))
+                lc_t1,lc_t2,lc_f,lc_fe=list(map(array,list(zip(*lc))))
 
                 if self.save_lc:
                     savetxt("%s_%.5lg_%.5lg.txt"%(source_short_name,erange[0],erange[1]),column_stack((lc_t1,lc_t2,lc_f,lc_fe)))
