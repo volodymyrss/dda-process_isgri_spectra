@@ -91,7 +91,11 @@ class ScWSpectraList(ddosa.DataAnalysis):
     maxspec=None
 
     def main(self):
-        self.spectra=[[ddosa.ii_spectra_extract(assume=scw),useresponse.RebinResponse(assume=scw),ddosa.ISGRIResponse(assume=scw)] for scw in self.input_scwlist.scwlistdata]
+        self.spectra=[[
+                       ddosa.ii_spectra_extract(assume=scw),
+                       useresponse.RebinResponse(assume=scw),
+                       ddosa.ISGRIResponse(assume=scw)
+                       ] for scw in self.input_scwlist.scwlistdata]
 
         if len(self.spectra)==0:
             raise ddosa.EmptyScWList()
@@ -299,9 +303,9 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
             assert(len(spectrum[4].keys())==1)
 
-            if spectrum[4].keys()[0] is not None:
+            if list(spectrum[4].keys())[0] is not None:
                 arf_fn="arf_sum_%s.fits"%source_short_name
-                fits.open(spectrum[4].keys()[0]).writeto(arf_fn,clobber=True)
+                fits.open(list(spectrum[4].keys())[0]).writeto(arf_fn,clobber=True)
             else:
                 arf_fn="arf_sum_%s.fits"%source_short_name
                 dc=pilton.heatool("dal_create")
@@ -324,14 +328,14 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
                 #fits.open(arf_fn)
                 #arf_fn=None
             
-            print("response keys",len(spectrum[5].keys()),spectrum[5].keys())
+            print("response keys",len(spectrum[5].keys()),list(spectrum[5].keys()))
             spectrum[5]=dict(spectrum[5].items()[:1])
 
             assert(len(spectrum[5].keys())==1)
             rmf_fn="rmf_sum_%s.fits"%source_short_name
 
-            print("writing:",spectrum[5].keys()[0],"to",rmf_fn)
-            fits.open(spectrum[5].keys()[0]).writeto(rmf_fn,clobber=True)
+            print("writing:",list(spectrum[5].keys())[0],"to",rmf_fn)
+            fits.open(list(spectrum[5].keys())[0]).writeto(rmf_fn,clobber=True)
             
 
             spectrum[3].data['RATE'][:],spectrum[3].data['STAT_ERR'][:]=self.input_efficiency.correct(spectrum[0][:],(spectrum[1]**0.5)[:])
@@ -369,7 +373,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
             spectrum[3].header['STAMP']=None
 
 
-            _rmf=fits.open(spectrum[5].keys()[0])
+            _rmf=fits.open(list(spectrum[5].keys())[0])
             spectrum[3].data['QUALITY'][_rmf[1].data['E_MIN']<30]=3
 
             fn="isgri_sum_%s.fits"%source_short_name
