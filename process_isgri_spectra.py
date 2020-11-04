@@ -2,7 +2,7 @@
 
 import ddosa 
 from astropy.io import fits 
-from bcolors import render
+from pscolors import render
 import datetime
 import subprocess
 import os
