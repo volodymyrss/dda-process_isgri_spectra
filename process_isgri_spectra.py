@@ -83,6 +83,7 @@ class ScWSpectraList(ddosa.DataAnalysis):
     input_scwlist=ddosa.RevScWList
     copy_cached_input=False
     input_specsummary=ddosa.SpectraProcessingSummary
+    input_rebinresponsesummary=useresponse.RebinResponseProcessingSummary
 
     allow_alias=True
 
@@ -200,7 +201,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
         t0=time.time()
         i_spec=1
 
-        for spectrum,rmf,arf in choice:
+        for spectrum, rmf, arf in choice:
             print("processing",spectrum,rmf,arf)
 
             if hasattr(spectrum,'empty_results'):
@@ -252,7 +253,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
                     tstop=e.header['TSTOP']
                     revol=e.header['REVOL']
                     if name not in spectra:
-                        spectra[name]=[rate,err**2,exposure,e,defaultdict(int),defaultdict(int),ontime,telapse,tstart,tstop,[revol],exp_src]
+                        spectra[name] = [rate, err**2, exposure, e.copy(), defaultdict(int), defaultdict(int),ontime,telapse,tstart,tstop,[revol],exp_src]
                         preserve_file=True
                     else:
                         err[isnan(err) | (err==0)]=inf
@@ -338,7 +339,14 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
             fits.open(list(spectrum[5].keys())[0]).writeto(rmf_fn,clobber=True)
             
 
-            spectrum[3].data['RATE'][:],spectrum[3].data['STAT_ERR'][:]=self.input_efficiency.correct(spectrum[0][:],(spectrum[1]**0.5)[:])
+            try:
+                spectrum[3].data['RATE'][:] = spectrum[0][:]
+                spectrum[3].data['STAT_ERR'][:] = (spectrum[1]**0.5)[:]
+                #spectrum[3].data['RATE'][:],spectrum[3].data['STAT_ERR'][:] = self.input_efficiency.correct(spectrum[0][:],(spectrum[1]**0.5)[:])
+            except Exception as e:
+                print("problem with", spectrum[0], spectrum[1], spectrum[3], e)
+                raise
+
             spectrum[3].header['EXPOSURE']=spectrum[2]
             spectrum[3].header['ONTIME']=spectrum[6]
             spectrum[3].header['TELAPSE']=spectrum[7]
