@@ -2,7 +2,12 @@ from __future__ import print_function
 
 import ddosa 
 from astropy.io import fits 
-from pscolors import render
+
+try:
+    from pscolors import render
+except:
+    from bcolors import render
+
 import datetime
 import subprocess
 import os
