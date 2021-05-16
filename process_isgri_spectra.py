@@ -86,7 +86,7 @@ class ISGRISpectrumPack(ddosa.DataAnalysis):
     cached=True
 
     def main(self):
-        if hasattr(self.input_spectra.spectrum,'empty_results'):
+        if hasattr(self.input_spectra,'empty_results'):
             print("skipping")
             self.empty_results = True
             return
