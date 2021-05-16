@@ -5,6 +5,7 @@ from astropy.io import fits
 from pscolors import render
 import datetime
 import subprocess
+import shutil
 import os
 
 try:
@@ -17,7 +18,8 @@ from collections import defaultdict
 
 import useresponse
 
-class MultiEpochRMFNotSupported(da.AnalysisException):
+#class MultiEpochRMFNotSupported(da.AnalysisException):
+class MultiEpochRMFNotSupported:
     pass
 
 try:
@@ -71,7 +73,28 @@ class ProcessSpectra(ddosa.DataAnalysis):
             hdu.writeto(fn,clobber=True)
             setattr(self,fn,da.DataFile(fn))
 
+def localized_DataFile(fn):
+    lfn = os.path.basename(fn)
+    shutil.copyfile(fn, lfn)
+    return da.DataFile(lfn)
 
+class ISGRISpectrumPack(ddosa.DataAnalysis):
+    input_spectra=ddosa.ii_spectra_extract
+    input_arf=useresponse.FindResponse
+    input_response=ddosa.ISGRIResponse
+
+    cached=True
+
+    def main(self):
+        if hasattr(self.input_spectra.spectrum,'empty_results'):
+            print("skipping")
+            self.empty_results = True
+            return
+
+    
+        self.spectra_spectrum = self.input_spectra.spectrum
+        self.arf = localized_DataFile(self.input_arf.arf_path)
+        self.rmf = localized_DataFile(self.input_response.path)
 
 
 class ScWSpectraList(ddosa.DataAnalysis):
@@ -86,7 +109,8 @@ class ScWSpectraList(ddosa.DataAnalysis):
     maxspec=None
 
     def main(self):
-        self.spectra=[[ddosa.ii_spectra_extract(assume=scw),useresponse.FindResponse(assume=scw),ddosa.ISGRIResponse(assume=scw)] for scw in self.input_scwlist.scwlistdata]
+        self.spectra=[ISGRISpectrumPack(assume=scw) for scw in self.input_scwlist.scwlistdata]
+        #self.spectra=[[ddosa.ii_spectra_extract(assume=scw),useresponse.FindResponse(assume=scw),ddosa.ISGRIResponse(assume=scw)] for scw in self.input_scwlist.scwlistdata]
 
         if len(self.spectra)==0:
             raise ddosa.EmptyScWList()
@@ -154,6 +178,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
     input_response=ddosa.SpectraBins
 
+
     #input_efficiency=SpectrumEfficiencyCorrection
 
     copy_cached_input=False
@@ -162,7 +187,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
     cached=True
 
-    version="v5.4.2"
+    version="v5.4.2.3"
 
     sources=['Crab']
 
@@ -192,12 +217,13 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
         i_spec=1
 
 
-        for spectrum,arf,rmf in choice:
-            if hasattr(spectrum,'empty_results') or not hasattr(spectrum,'spectrum'):
-                print("skipping",spectrum)
+        #for spectrum,arf,rmf in choice:
+        for pack in choice:
+            if hasattr(pack,'empty_results'):
+                print("skipping", pack)
                 continue
 
-            fn=spectrum.spectrum.get_path()
+            fn=pack.spectra_spectrum.get_path()
             print("%i/%i"%(i_spec,len(choice)))
             tc=time.time()
             print("seconds per spectrum:",(tc-t0)/i_spec,"will be ready in %.5lg seconds"%((len(choice)-i_spec)*(tc-t0)/i_spec))
@@ -249,8 +275,8 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
                             spectra[name][10].append(revol)
                         spectra[name][11]+=exp_src
 
-                    arf_path=arf.arf_path
-                    rmf_path=rmf.path
+                    arf_path=pack.arf.get_path()
+                    rmf_path=pack.rmf.get_path()
 
                     spectra[name][4][arf_path]+=exposure
                     spectra[name][5][rmf_path]+=exposure
@@ -302,7 +328,8 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
                 
 
             if len(spectrum[5].keys())>1:
-                raise MultiEpochRMFNotSupported()
+
+                raise MultiEpochRMFNotSupported(list(spectrum[5].keys()))
 
             arf_fn="arf_sum_%s.fits"%source_short_name
             #fits.open(spectrum[4].keys()[0]).writeto(arf_fn,clobber=True)
