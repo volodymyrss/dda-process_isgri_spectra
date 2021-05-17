@@ -327,7 +327,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
             arf_first[1].data['SPECRESP']/=total_exposure
                 
 
-            if len(spectrum[5].keys())>1:
+            if len(list(set(spectrum[5].keys())))>1:
 
                 print(list(spectrum[5].keys()))
 
