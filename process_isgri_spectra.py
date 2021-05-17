@@ -327,10 +327,12 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
             arf_first[1].data['SPECRESP']/=total_exposure
                 
 
-            if len(list(set(spectrum[5].keys())))>1:
+            rmf_checksums = []
+            for rmf_fn, rmf_exposure in spectrum[5].items():
+                cs = fits.open(rmf_fn)[1].header['CHECKSUM']
+                rmf_checksums.append(cs)
 
-                print(list(spectrum[5].keys()))
-
+            if len(list(set(rmf_checksums))) > 1:
                 raise MultiEpochRMFNotSupported(f"found many epochs: {list(spectrum[5].keys())}")
 
             arf_fn="arf_sum_%s.fits"%source_short_name
