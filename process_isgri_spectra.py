@@ -19,7 +19,7 @@ from collections import defaultdict
 import useresponse
 
 #class MultiEpochRMFNotSupported(da.AnalysisException):
-class MultiEpochRMFNotSupported:
+class MultiEpochRMFNotSupported(Exception):
     pass
 
 try:
@@ -329,7 +329,9 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
             if len(spectrum[5].keys())>1:
 
-                raise MultiEpochRMFNotSupported(list(spectrum[5].keys()))
+                print(list(spectrum[5].keys()))
+
+                raise MultiEpochRMFNotSupported(f"found many epochs: {list(spectrum[5].keys())}")
 
             arf_fn="arf_sum_%s.fits"%source_short_name
             #fits.open(spectrum[4].keys()[0]).writeto(arf_fn,clobber=True)
