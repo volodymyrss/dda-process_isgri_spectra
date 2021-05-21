@@ -54,11 +54,6 @@ def get_open_fds():
     return nprocs
 
 
-def localized_DataFile(fn):
-    lfn = os.path.basename(fn)
-    shutil.copyfile(fn, lfn)
-    return da.DataFile(lfn)
-
 class ISGRISpectrumPack(ddosa.DataAnalysis):
     input_spectra=ddosa.ii_spectra_extract
     input_response=useresponse.RebinResponse
@@ -72,8 +67,8 @@ class ISGRISpectrumPack(ddosa.DataAnalysis):
             return
 
     
-        self.spectra_spectrum = self.input_spectra.spectrum
-        self.rmf = localized_DataFile(self.input_response.path)
+        self.spectra_spectrum = ddosa.localized_DataFile(self.input_spectra.spectrum)
+        self.rmf = ddosa.localized_DataFile(self.input_response.rmf)
 
 class ProcessSpectra(ddosa.DataAnalysis):
     input_spectra=ddosa.ii_spectra_extract
