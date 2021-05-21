@@ -61,8 +61,7 @@ def localized_DataFile(fn):
 
 class ISGRISpectrumPack(ddosa.DataAnalysis):
     input_spectra=ddosa.ii_spectra_extract
-    input_arf=useresponse.RebinResponse
-    input_response=ddosa.ISGRIResponse
+    input_response=useresponse.RebinResponse
           
     cached=True
 
@@ -74,7 +73,6 @@ class ISGRISpectrumPack(ddosa.DataAnalysis):
 
     
         self.spectra_spectrum = self.input_spectra.spectrum
-        self.arf = localized_DataFile(self.input_arf.arf_path)
         self.rmf = localized_DataFile(self.input_response.path)
 
 class ProcessSpectra(ddosa.DataAnalysis):
