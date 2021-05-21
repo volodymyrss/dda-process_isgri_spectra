@@ -11,7 +11,7 @@ except:
 import datetime
 import subprocess
 import os
-
+import shutil
 import pilton
 
 
@@ -52,6 +52,30 @@ def get_open_fds():
             files
         )
     return nprocs
+
+
+def localized_DataFile(fn):
+    lfn = os.path.basename(fn)
+    shutil.copyfile(fn, lfn)
+    return da.DataFile(lfn)
+
+class ISGRISpectrumPack(ddosa.DataAnalysis):
+    input_spectra=ddosa.ii_spectra_extract
+    input_arf=useresponse.RebinResponse
+    input_response=ddosa.ISGRIResponse
+          
+    cached=True
+
+    def main(self):
+        if hasattr(self.input_spectra,'empty_results'):
+            print("skipping")
+            self.empty_results = True
+            return
+
+    
+        self.spectra_spectrum = self.input_spectra.spectrum
+        self.arf = localized_DataFile(self.input_arf.arf_path)
+        self.rmf = localized_DataFile(self.input_response.path)
 
 class ProcessSpectra(ddosa.DataAnalysis):
     input_spectra=ddosa.ii_spectra_extract
@@ -97,11 +121,12 @@ class ScWSpectraList(ddosa.DataAnalysis):
     maxspec=None
 
     def main(self):
-        self.spectra=[[
-                       ddosa.ii_spectra_extract(assume=scw),
-                       useresponse.RebinResponse(assume=scw),
-                       ddosa.ISGRIResponse(assume=scw)
-                       ] for scw in self.input_scwlist.scwlistdata]
+        self.spectra=[ISGRISpectrumPack(assume=scw) for scw in self.input_scwlist.scwlistdata]
+        #self.spectra=[[
+                    #    ddosa.ii_spectra_extract(assume=scw),
+                    #    useresponse.RebinResponse(assume=scw),
+                    #    ddosa.ISGRIResponse(assume=scw)
+                    #    ] for scw in self.input_scwlist.scwlistdata]
 
         if len(self.spectra)==0:
             raise ddosa.EmptyScWList()
@@ -206,18 +231,14 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
         t0=time.time()
         i_spec=1
 
-        for spectrum, rmf, arf in choice:
-            print("processing",spectrum,rmf,arf)
-
-            if hasattr(spectrum,'empty_results'):
-                print("skipping",spectrum)
-                continue
-
-            if not hasattr(spectrum,'spectrum'):
-                print("skipping",spectrum)
+#        for spectrum, rmf, arf in choice:
+#            print("processing",spectrum,rmf,arf)
+        for pack in choice:
+            if hasattr(pack,'empty_results'):
+                print("skipping", pack)
                 continue
             
-            fn=spectrum.spectrum.get_path()
+            fn=pack.spectra_spectrum.get_path()
             print("%i/%i"%(i_spec,len(choice)))
             tc=time.time()
             print("seconds per spectrum:",(tc-t0)/i_spec,"will be ready in %.5lg seconds"%((len(choice)-i_spec)*(tc-t0)/i_spec))
@@ -275,12 +296,12 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
                             spectra[name][10].append(revol)
                         spectra[name][11]+=exp_src
 
-                    if hasattr(arf,'arf_path'):
-                        arf_path=arf.arf_path
+                    if hasattr(pack.arf, 'arf_path'):
+                        arf_path = pack.arf.get_path()
                     else:
-                        arf_path=None
+                        arf_path = None
 
-                    rmf_path=rmf.rmf.get_path()
+                    rmf_path=pack.rmf.get_path()
 
                     spectra[name][4][arf_path]+=exposure
                     spectra[name][5][rmf_path]+=exposure
