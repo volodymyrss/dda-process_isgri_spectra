@@ -218,6 +218,10 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
             if hasattr(pack,'empty_results'):
                 print("skipping", pack)
                 continue
+            
+            if not hasattr(pack,'spectra_spectrum'):
+                print("skipping", pack)
+                continue
 
             fn=pack.spectra_spectrum.get_path()
             print("%i/%i"%(i_spec,len(choice)))
