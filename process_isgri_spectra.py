@@ -73,10 +73,6 @@ class ProcessSpectra(ddosa.DataAnalysis):
             hdu.writeto(fn,clobber=True)
             setattr(self,fn,da.DataFile(fn))
 
-def localized_DataFile(fn):
-    lfn = os.path.basename(fn)
-    shutil.copyfile(fn, lfn)
-    return da.DataFile(lfn)
 
 class ISGRISpectrumPack(ddosa.DataAnalysis):
     input_spectra=ddosa.ii_spectra_extract
@@ -92,9 +88,9 @@ class ISGRISpectrumPack(ddosa.DataAnalysis):
             return
 
     
-        self.spectra_spectrum = self.input_spectra.spectrum
-        self.arf = localized_DataFile(self.input_arf.arf_path)
-        self.rmf = localized_DataFile(self.input_response.path)
+        self.spectra_spectrum = ddosa.localized_DataFile(self.input_spectra.spectrum)
+        self.arf = ddosa.localized_DataFile(self.input_arf.arf_path)
+        self.rmf = ddosa.localized_DataFile(self.input_response.path)
 
 
 class ScWSpectraList(ddosa.DataAnalysis):
