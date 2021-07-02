@@ -173,15 +173,15 @@ def merge_rmfs(rmfs: dict):
     for rmf_fn, rmf_exposure in rmfs.items():
         if merged_rmf_f is None:
             merged_rmf_f = fits.open(rmf_fn)
-            merged_rmf_f['ISGR-RMF-RSP'].data['MATRIX'] *= rmf_exposure
+            merged_rmf_f['ISGR-RMF.-RSP'].data['MATRIX'] *= rmf_exposure
             total_exposure += rmf_exposure
         else:
             rmf_f = fits.open(rmf_fn)
-            merged_rmf_f['ISGR-RMF-RSP'].data['MATRIX'] + \
-                rmf_f['ISGR-RMF-RSP'].data['MATRIX'] * rmf_exposure
+            merged_rmf_f['ISGR-RMF.-RSP'].data['MATRIX'] + \
+                rmf_f['ISGR-RMF.-RSP'].data['MATRIX'] * rmf_exposure
             total_exposure += rmf_exposure
 
-    merged_rmf_f['ISGR-RMF-RSP'].data['MATRIX'] /= total_exposure
+    merged_rmf_f['ISGR-RMF.-RSP'].data['MATRIX'] /= total_exposure
 
     print("merged rmf total exposure", total_exposure)
 
