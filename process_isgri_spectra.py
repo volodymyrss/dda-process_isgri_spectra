@@ -21,6 +21,7 @@ except ImportError:
     import dataanalysis as da
 
 from numpy import *
+import numpy as np
 from collections import defaultdict
 
 import useresponse
@@ -164,6 +165,28 @@ class SpectrumEfficiencyCorrection(ddosa.DataAnalysis):
 
         return cr,e
 
+
+def merge_rmfs(rmfs: dict):
+    merged_rmf_f = None
+    total_exposure = 0
+
+    for rmf_fn, rmf_exposure in rmfs.items():
+        if merged_rmf_f is None:
+            merged_rmf_f = fits.open(rmf_fn)
+            merged_rmf_f['ISGR-RMF-RSP'].data['MATRIX'] *= rmf_exposure
+            total_exposure += rmf_exposure
+        else:
+            rmf_f = fits.open(rmf_fn)
+            merged_rmf_f['ISGR-RMF-RSP'].data['MATRIX'] + \
+                rmf_f['ISGR-RMF-RSP'].data['MATRIX'] * rmf_exposure
+            total_exposure += rmf_exposure
+
+    merged_rmf_f['ISGR-RMF-RSP'].data['MATRIX'] /= total_exposure
+
+    print("merged rmf total exposure", total_exposure)
+
+    return merged_rmf_f, total_exposure
+
 class ISGRISpectraSum(ddosa.DataAnalysis):
     input_spectralist=ScWSpectraList
 
@@ -177,7 +200,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
     cached=True
 
-    version="v5.8.2"
+    version="v5.8.3"
 
     sources=['Crab']
 
@@ -207,7 +230,10 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
         i_spec=1
 
         for spectrum, rmf, arf in choice:
-            print("processing",spectrum,rmf,arf)
+            print("\n\n\033[31mprocessing: \n" + \
+                  "          \033[32m" + str(spectrum) + "\n"\
+                  "          \033[32m" + str(rmf) + "\n"\
+                  "          \033[32m" + str(arf) + "\033[0m")
 
             if hasattr(spectrum,'empty_results'):
                 print("skipping",spectrum)
@@ -218,14 +244,17 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
                 continue
             
             fn=spectrum.spectrum.get_path()
+            rmf_fn = rmf.rmf.get_path()
+
             print("%i/%i"%(i_spec,len(choice)))
             tc=time.time()
             print("seconds per spectrum:",(tc-t0)/i_spec,"will be ready in %.5lg seconds"%((len(choice)-i_spec)*(tc-t0)/i_spec))
             i_spec+=1
-            print("spectrum from",fn)
+            print("\033[33mspectrum from",fn,"\033[0m")
+            print("\033[33mrmf from",rmf_fn,"\033[0m")
 
             f=fits.open(fn)
-
+            f_rmf=fits.open(rmf_fn)
 
             t1,t2=f[1].header['TSTART'],f[1].header['TSTOP']
             print(t1,t2)
@@ -261,8 +290,8 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
                         spectra[name] = [rate, err**2, exposure, e.copy(), defaultdict(int), defaultdict(int),ontime,telapse,tstart,tstop,[revol],exp_src]
                         preserve_file=True
                     else:
-                        err[isnan(err) | (err==0)]=inf
-                        spectra[name][1][isnan(spectra[name][1]) | (spectra[name][1]==0)]=inf
+                        err[np.isnan(err) | (err==0)]=np.inf
+                        spectra[name][1][np.isnan(spectra[name][1]) | (spectra[name][1]==0)]=np.inf
                         spectra[name][0]=(spectra[name][0]/spectra[name][1]+rate/err**2)/(1/spectra[name][1]+1/err**2)
                         #spectra[name][0]=(spectra[name][0]/spectra[name][1]+rate/err**2)/(1/spectra[name][1]+1/err**2)
                         spectra[name][1]=1/(1/spectra[name][1]+1/err**2)
@@ -284,6 +313,8 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
                     spectra[name][4][arf_path]+=exposure
                     spectra[name][5][rmf_path]+=exposure
+
+                    print(f"\033[31mnew exposure for {rmf_path} {spectra[name][5][rmf_path]}\033[0m")
             
                     print(render("{BLUE}%.20s{/}"%name),"%.4lg sigma in %.5lg ks"%(sig(rate,err),exposure/1e3),"total %.4lg in %.5lg ks"%(sig(spectra[name][0],spectra[name][1]), spectra[name][2]/1e3))
 
@@ -335,13 +366,17 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
                 #arf_fn=None
             
             print("response keys",len(list(spectrum[5].keys())),list(spectrum[5].keys()))
-            spectrum[5]=dict(list(spectrum[5].items())[:1])
 
-            assert(len(list(spectrum[5].keys()))==1)
+            merged_rmf_f, merged_rmf_exposure = merge_rmfs(spectrum[5])
+            
+            # spectrum[5]=dict(list(spectrum[5].items())[:1])
+            # assert(len(list(spectrum[5].keys()))==1)
+            
             rmf_fn="rmf_sum_%s.fits"%source_short_name
 
-            print("writing:",list(spectrum[5].keys())[0],"to",rmf_fn)
-            fits.open(list(spectrum[5].keys())[0]).writeto(rmf_fn,clobber=True)
+            print("writing:", merged_rmf_f,"to",rmf_fn)
+            #print("writing:",list(spectrum[5].keys())[0],"to",rmf_fn)
+            merged_rmf_f.writeto(rmf_fn, clobber=True)
             
 
             try:
