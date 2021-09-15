@@ -177,7 +177,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
     cached=True
 
-    version="v5.8.2"
+    version="v5.8.3"
 
     sources=['Crab']
 
@@ -206,6 +206,8 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
         t0=time.time()
         i_spec=1
 
+        used_spectra = []
+
         for spectrum, rmf, arf in choice:
             print("processing",spectrum,rmf,arf)
 
@@ -223,9 +225,14 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
             print("seconds per spectrum:",(tc-t0)/i_spec,"will be ready in %.5lg seconds"%((len(choice)-i_spec)*(tc-t0)/i_spec))
             i_spec+=1
             print("spectrum from",fn)
+            # TODO: check if spectra are different
 
             f=fits.open(fn)
 
+            if fn in used_spectra:
+                raise Exception("repeated spectrum! BIG problem with environment!")
+
+            used_spectra.append(fn)
 
             t1,t2=f[1].header['TSTART'],f[1].header['TSTOP']
             print(t1,t2)
