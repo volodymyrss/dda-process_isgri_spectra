@@ -210,8 +210,9 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
         import time
         t0=time.time()
-        i_spec=1
+        i_spec=1        
 
+        used_spectra = []
 
         #for spectrum,arf,rmf in choice:
         for pack in choice:
@@ -232,6 +233,10 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
             f=fits.open(fn)
 
+            if fn in used_spectra:
+                raise Exception("identical spectra in different scw! impossible!")
+            else:
+                used_spectra.append(fn)
 
             t1,t2=f[1].header['TSTART'],f[1].header['TSTOP']
             print(t1,t2)
