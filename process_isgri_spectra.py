@@ -429,7 +429,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
 
             _rmf=fits.open(list(spectrum[5].keys())[0])
-            spectrum[3].data['QUALITY'][_rmf[1].data['E_MIN']<30]=3
+            spectrum[3].data['QUALITY'][_rmf[1].data['E_MIN']<25]=3
 
             fn="isgri_sum_%s.fits"%source_short_name
             spectrum[3].writeto(fn, clobber=True, checksum=True)
