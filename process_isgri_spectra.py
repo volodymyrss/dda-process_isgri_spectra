@@ -430,9 +430,10 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
             _rmf=fits.open(list(spectrum[5].keys())[0])
 
-            ebds_ext = _rmf.get('ISGR-EBDS-MOD', None)
-            if ebds_ext is None:
-                ebds_ext = _rmf.get('EBOUNDS', None)
+            try:
+                ebds_ext = _rmf['ISGR-EBDS-MOD']
+            except:
+                ebds_ext = _rmf['EBOUNDS']
 
             spectrum[3].data['QUALITY'][ebds_ext.data['E_MIN']<25]=3
 
