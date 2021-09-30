@@ -17,7 +17,7 @@ class SpectraBins(ddosa.SpectraBins):
     def main(self):
         self.binrmf="/home/isdc/savchenk/osa11_deployment/deployment/ic/ic/ibis/rsp/rmf_62bands.fits"
         e=fits.open(self.binrmf)[3].data
-        self.bins=zip(e['E_MIN'],e['E_MAX'])
+        self.bins=list(zip(e['E_MIN'],e['E_MAX']))
         self.binrmfext=self.binrmf+'[3]'
 
 class ISGRIResponse(ddosa.ISGRIResponse):
@@ -30,9 +30,9 @@ def test_sum():
                         ])
     fa.get()
 
-    print fa.spectra
+    print(fa.spectra)
 
-    print fa.extracted_sources
+    print(fa.extracted_sources)
 
 
 def test_one():
