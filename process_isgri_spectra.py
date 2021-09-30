@@ -1,5 +1,3 @@
-
-
 import ddosa 
 from astropy.io import fits 
 
@@ -14,6 +12,7 @@ import os
 
 import pilton
 
+from astropy.time import Time
 
 try:
     from dataanalysis import core as da
@@ -200,7 +199,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
     cached=True
 
-    version="v5.8.4"
+    version="v5.8.5"
 
     sources=['Crab']
 
@@ -435,7 +434,12 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
             except:
                 ebds_ext = _rmf['EBOUNDS']
 
-            spectrum[3].data['QUALITY'][ebds_ext.data['E_MIN']<25]=3
+            t = Time(spectrum[3].header['TSTOP']+51544, format='mjd')
+            emin = 15 + (t.byear - 2002)/(2020 - 2002) * (30 - 15)
+
+            print("\033[31mselected emin: ", emin, "\033[0m")
+
+            spectrum[3].data['QUALITY'][ebds_ext.data['E_MIN'] < emin]=3
 
             fn="isgri_sum_%s.fits"%source_short_name
             spectrum[3].writeto(fn, clobber=True, checksum=True)

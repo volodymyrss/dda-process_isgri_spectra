@@ -24,14 +24,18 @@ import process_isgri_spectra
 
 
 def test_sum():
+    #scw = "066500220010.001"
+    scw = "198700220010.001"
+
     fa=process_isgri_spectra.ISGRISpectraSum(assume=[
                             process_isgri_spectra.ScWSpectraList(
                                 input_scwlist=ddosa.IDScWList(
-                                    use_scwid_list=["066500220010.001"],
-                                    use_version="v1066500220010"))])
+                                    use_scwid_list=[scw],
+                                    use_version="v1"+scw))])
+    fa.cached = False    
     fa.get()
 
-    print(fa.spectra)
+    # print(fa.spectra)
 
     print(fa.extracted_sources)
 
