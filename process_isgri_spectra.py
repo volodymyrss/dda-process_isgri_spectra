@@ -1,5 +1,7 @@
 import ddosa 
 from astropy.io import fits 
+import time
+from pathlib import Path
 
 try:
     from pscolors import render
@@ -25,10 +27,25 @@ from collections import defaultdict
 
 import useresponse
 
+
 try:
     import crab
 except:
     pass
+
+try:
+    import matplotlib as mpl
+    mpl.use('agg')
+    import matplotlib.pylab as plt
+except:
+    print("no matplotlib: some functionality will not be available")
+
+
+try:
+    import ogip
+    import ogip.spec
+except ImportError:
+    print("no ogip: maybe it's ok")
 
 def get_open_fds():
     '''
@@ -187,19 +204,23 @@ def merge_rmfs(rmfs: dict):
     return merged_rmf_f, total_exposure
 
 class ISGRISpectraSum(ddosa.DataAnalysis):
+    version="v5.8.5"
+
     input_spectralist=ScWSpectraList
-
     input_response=ddosa.SpectraBins
-
     input_efficiency=SpectrumEfficiencyCorrection
 
+    input_icroot=ddosa.ICRoot
+
     copy_cached_input=False
+
+    verify_background_lines=True
+    collect_ic=True
+    adapt_zero_offset=False
 
     spectra=None
 
     cached=True
-
-    version="v5.8.5"
 
     sources=['Crab']
 
@@ -212,6 +233,10 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
             v+=".extractall"
         else:
             v+".extract_"+("_".join(self.sources))
+
+        if self.adapt_zero_offset:
+            v += ".offsetmorph"
+
         return v
 
     def main(self):
@@ -222,9 +247,8 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
         allsource_summary=[]
 
 
-        sig=lambda x,y:(((x/y)[~isnan(y) & (y!=0) & ~isinf(y) & ~isinf(x) & ~isnan(x)])**2).sum()**0.5
+        sig = lambda x, y: (((x/y)[~np.isnan(y) & (y!=0) & ~np.isinf(y) & ~np.isinf(x) & ~np.isnan(x)])**2).sum()**0.5
 
-        import time
         t0=time.time()
         i_spec=1
 
@@ -244,7 +268,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
                 print("skipping",spectrum)
                 continue
             
-            fn=spectrum.spectrum.get_path()
+            fn = spectrum.spectrum.get_path()
             rmf_fn = rmf.rmf.get_path()
 
             print("%i/%i"%(i_spec,len(choice)))
@@ -281,6 +305,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
                     name=e.header['NAME']
                 except:
                     name="Unnamed"
+                    
                 allsource_summary.append([name,t1,t2,copy(e.data['RATE']),copy(e.data['STAT_ERR'])])
                 if (name in self.sources) or (self.extract_all):
                     rate=e.data['RATE']
@@ -293,9 +318,11 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
                     tstop=e.header['TSTOP']
                     revol=e.header['REVOL']
                     if name not in spectra:
-                        spectra[name] = [rate, err**2, exposure, e.copy(), defaultdict(int), defaultdict(int),ontime,telapse,tstart,tstop,[revol],exp_src]
-                        preserve_file=True
+                        # new
+                        spectra[name] = [rate, err**2, exposure, e.copy(), defaultdict(int), defaultdict(int),
+                                         ontime, telapse, tstart, tstop, [revol], exp_src]
                     else:
+                        # add
                         err[np.isnan(err) | (err==0)]=np.inf
                         spectra[name][1][np.isnan(spectra[name][1]) | (spectra[name][1]==0)]=np.inf
                         spectra[name][0]=(spectra[name][0]/spectra[name][1]+rate/err**2)/(1/spectra[name][1]+1/err**2)
@@ -320,13 +347,10 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
                     spectra[name][4][arf_path]+=exposure
                     spectra[name][5][rmf_path]+=exposure
 
-                    print(f"\033[31mnew exposure for {rmf_path} {spectra[name][5][rmf_path]}\033[0m")
+                    print(f"\033[31mcurrent exposure for {rmf_path} {spectra[name][5][rmf_path]}\033[0m")
             
                     print(render("{BLUE}%.20s{/}"%name),"%.4lg sigma in %.5lg ks"%(sig(rate,err),exposure/1e3),"total %.4lg in %.5lg ks"%(sig(spectra[name][0],spectra[name][1]), spectra[name][2]/1e3))
 
-
-            #if not preserve_file:
-            #    print("closing file")
             f.close()
 
             try:
@@ -334,55 +358,43 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
             except Exception as e:
                 print("unable to check open fds")
 
-        eb1,eb2=list(map(array,list(zip(*self.input_response.bins))))
+        eb1, eb2 = list(map(array,list(zip(*self.input_response.bins))))
 
+        # now write        
         self.spectra=spectra
 
         source_results=[]
         self.extracted_sources=[]
 
-        for name,spectrum in list(spectra.items()):
+        self.multi_spec_plot_init()
+
+        for name, spectrum in list(spectra.items()):
             source_short_name=name.strip().replace(" ","_").replace("/","_")
 
             assert(len(list(spectrum[4].keys()))==1)
 
+            arf_fn = f"arf_sum_{source_short_name}.fits"
             if list(spectrum[4].keys())[0] is not None:
-                arf_fn="arf_sum_%s.fits"%source_short_name
-                fits.open(list(spectrum[4].keys())[0]).writeto(arf_fn,clobber=True)
+                fits.open(list(spectrum[4].keys())[0]).writeto(arf_fn, clobber=True)
             else:
-                arf_fn="arf_sum_%s.fits"%source_short_name
-                dc=pilton.heatool("dal_create")
-                dc['obj_name']=arf_fn
-                dc['template']="ISGR-ARF.-RSP.tpl"
-
-                ddosa.remove_withtemplate(arf_fn+"(ISGR-ARF.-RSP.tpl)")
-                dc.run()
-
-                _rmf=fits.open(list(spectrum[5].keys())[0])
-
-                _arf=fits.open(arf_fn)
-                _arf[1].data=zeros(len(_rmf['ISGR-RMF.-RSP'].data['ENERG_LO']),dtype=_arf[1].data.dtype)
-
-                _arf[1].data['ENERG_LO']=_rmf['ISGR-RMF.-RSP'].data['ENERG_LO']
-                _arf[1].data['ENERG_HI']=_rmf['ISGR-RMF.-RSP'].data['ENERG_HI']
-                _arf[1].data['SPECRESP']=1.
-                _arf.writeto(arf_fn,overwrite=True)
-
-                #fits.open(arf_fn)
-                #arf_fn=None
+                self.write_unitary_arf(rmf_fn, arf_fn)
             
             print("response keys",len(list(spectrum[5].keys())),list(spectrum[5].keys()))
 
             merged_rmf_f, merged_rmf_exposure = merge_rmfs(spectrum[5])
-            
-            # spectrum[5]=dict(list(spectrum[5].items())[:1])
-            # assert(len(list(spectrum[5].keys()))==1)
-            
+                        
             rmf_fn="rmf_sum_%s.fits"%source_short_name
 
-            print("writing:", merged_rmf_f,"to",rmf_fn)
-            #print("writing:",list(spectrum[5].keys())[0],"to",rmf_fn)
+            print("writing:", merged_rmf_f, "to", rmf_fn)
             merged_rmf_f.writeto(rmf_fn, clobber=True)
+
+            e_morph, e_morph_meta = self.produce_e_morph(
+                fits.open(fn)[1].header['TSTART'],
+                fits.open(fn)[1].header['TSTOP']
+            )
+
+            self.morph_rmf(rmf_fn, arf_fn, e_morph, e_morph_meta)
+
             
 
             try:
@@ -446,13 +458,12 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
             print("writing",fn)
 
 
-            select_range=lambda x,a,b:((eb1>a) & (eb2<b) & ~isnan(x) & ~isinf(x))
+            select_range=lambda x,a,b:((eb1>a) & (eb2<b) & ~np.isnan(x) & ~np.isinf(x))
 
             print(render("{RED}total{/} for {BLUE}%s{/}"%name))
 
             all_spectra=[l for l in allsource_summary if l[0]==name]
-            #print(all_spectra)
-
+            
             for erange in [(25,80),(80,300),(10,800)]:
                 m=select_range(spectrum[3].data['RATE'],erange[0],erange[1])
                 r=spectrum[3].data['RATE'][m]
@@ -477,7 +488,6 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
                 source_results.append([name]+source_stats)
                 
-
             setattr(self,fn.replace(".fits",""),da.DataFile(fn))
             
             if rmf_fn is not None:
@@ -486,7 +496,18 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
             if arf_fn is not None:
                 setattr(self,arf_fn.replace(".fits",""),da.DataFile(arf_fn))
 
-            self.extracted_sources.append([name,fn.replace(".fits",""),rmf_fn.replace(".fits",""),arf_fn.replace(".fits","") if arf_fn is not None else ""])
+            self.extracted_sources.append([name,
+                                           fn.replace(".fits",""),
+                                           rmf_fn.replace(".fits",""),
+                                           arf_fn.replace(".fits","") if arf_fn is not None else ""])
+
+            
+            if name == 'Background':
+                self.asses_background_lines(fn, rmf_fn)
+
+            self.multi_spec_plot_add_spectrum(fn, rmf_fn, e_morph)
+
+        self.multi_spec_plot_finalize()
 
         self.source_results=source_results
 
@@ -495,12 +516,211 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
             srf.write(sr[0].replace(" ","_")+" "+" ".join(["%.5lg"%s for s in sr[1:]])+"\n")
 
 
-        #heaspa.PHA(total_spectrum_summed,total_spectrum_summed**0.5,exposure=total_exposure).write(total_fn)
+    def collect_ic_info(self, coverage):
+        pass
+
+    def asses_background_lines(self, fn, rmf_fn):
+        #TODO: overplot offset and zero-offset morph here
+
+        spec = ogip.spec.PHAI.from_file_name(fn)
+                
+        # what's  wrong with it?.. compressed?
+        #rmf = ogip.spec.RMF.from_file_name(rmf_fn)
+
+        ebds_mod = fits.open(rmf_fn)['ISGR-EBDS-MOD']
+        e1 = ebds_mod.data['E_MIN']
+        e2 = ebds_mod.data['E_MAX']
+
+        
+        t1 = fits.open(fn)[1].header['TSTART']
+        t2 = fits.open(fn)[1].header['TSTOP']
+        tc = (t2 + t1)/2.
+
+        
+        icroot = Path(self.input_icroot.icroot)
+                
+        lut2idx = fits.open(icroot / 'idx/ic/ISGR-RISE-MOD-IDX.fits')[1].data
+        
+        p = (icroot / 'ic/ibis' / min(lut2idx, key=lambda r:abs(r['VSTART']-tc))['MEMBER_LOCATION']).resolve()
+        lut2 = fits.open(p)[1]
+
+        print(lut2)
+
+        plt.figure()
+        plt.imshow(np.stack(lut2.data['CORR']))
+        plt.savefig("lut2.png")
+
+
+        plt.figure(figsize=(10,7))
+
+        plt.plot(
+            e1,
+            spec._rate/(e2 - e1)
+        )
+        plt.axvline(59, lw=3, alpha=0.5, c='r')
+        plt.axvline(511, lw=3, alpha=0.5, c='r')
+
+        plt.xlim([15, 700])
+        #plt.ylim([spec._rate.])
+        plt.loglog()
+        plt.grid()
+        plt.xlabel('keV')
+        plt.ylabel('counts/keV')
+        plt.savefig("background.png")
+        
+
+    def write_unitary_arf(self, rmf_fn, arf_fn):
+        dc = pilton.heatool("dal_create")
+        dc['obj_name']=arf_fn
+        dc['template']="ISGR-ARF.-RSP.tpl"
+
+        ddosa.remove_withtemplate(arf_fn+"(ISGR-ARF.-RSP.tpl)")
+        dc.run()
+
+        _rmf=fits.open(rmf_fn)
+
+        _arf=fits.open(arf_fn)
+        _arf[1].data=zeros(len(_rmf['ISGR-RMF.-RSP'].data['ENERG_LO']),dtype=_arf[1].data.dtype)
+
+        _arf[1].data['ENERG_LO']=_rmf['ISGR-RMF.-RSP'].data['ENERG_LO']
+        _arf[1].data['ENERG_HI']=_rmf['ISGR-RMF.-RSP'].data['ENERG_HI']
+        _arf[1].data['SPECRESP']=1.
+        _arf.writeto(arf_fn,overwrite=True)
+
+
+    def produce_e_morph(self, t1, t2):
+        if (t2 - t1) > 60:
+            raise RuntimeError('too long to patch rmf!')            
             
- #       for l in allsource_summary:
-#            print(l[0] #,l[1].shape)
+        from astropy.time import Time
+
+        def offset_approximation(ijd):
+            return (2000 - ijd)/(800) * (1 - (ijd-5000)/6000)
+
+        offset_approximation(Time(2015, format='byear').mjd - 51544)
+
+        plt.figure(figsize=(15, 10))
+
+        # need to read from IC, per spectrum, in oda/osa
+        def offset_approximation(ijd):
+            return (2000 - ijd)/(800) * (1 - (ijd-5000)/6000)
+
+        def e_morph_family(E, lebias=4):
+            #r = E - E / ( 1 + (E/18)**2 )
+            r = E - lebias/(1 + np.exp((E/27)**2))*(1 + np.exp(1))
+            return r
+
+        plt.scatter([27, 60, 511], [-4, 0, 0], s=100)
+
+        plt.ylim(-20,20)
+        plt.semilogx()
+
+        e = np.logspace(1, 3, 500)
+
+        offset_approx = -offset_approximation((t1+t2)/2.)
+        e_morph = lambda en: e_morph_family(en, offset_approx)
+
+        for year in np.linspace(2002, 2022, 10):
+            leb = -offset_approximation(Time(year, format='byear').mjd - 51544)
+            plt.plot(
+                e,
+                e_morph_family(e, leb) - e 
+            )
+            
+        plt.plot(
+            e,
+            e_morph(e) - e,
+            lw=5
+        )
+
+        plt.grid()
+        plt.savefig('ebias-morph.png')
+        return e_morph, dict(offset_approx=offset_approx)
 
 
+    def morph_rmf(self, rmf_fn, arf_fn, e_morph, e_morph_meta):
+        import ogip.spec
+        import ogip.tools
+
+        rmf = ogip.spec.RMF.from_file_name_osaisgri(rmf_fn) 
+
+        rmf._matrix *= 1.49 # see https://gitlab.astro.unige.ch/integral/cc-workflows/cc-global-summary/ 
+
+        ogip.tools.transform_rmf(
+            rmf=rmf,
+            arf=ogip.spec.ARF.from_file_name_osa(arf_fn),
+            bias_function=e_morph,
+            preserved_projection=ogip.tools.crab_ph_cm2_s_kev
+        ).to_fits(rmf_fn)
+        
+        rmf = fits.open(rmf_fn)
+        rmf[1].header['MORPH'] = "; ".join({f'{k}: {v}' for k, v in e_morph_meta.items()})
+        rmf['EBOUNDS'].header['EXTNAME'] = 'ISGR-EBDS-MOD'
+        rmf['MATRIX'].header['EXTNAME'] = 'ISGR-RMF.-RSP'
+        rmf.writeto(rmf_fn, overwrite=True)    
+                
+        
+    def multi_spec_plot_init(self):
+        self._multi_spec_plot_figure = plt.figure(figsize=(15,10))
+        self._max_rate = 0
+
+        
+    def multi_spec_plot_add_spectrum(self, fn, rmf_fn, e_morph):
+        saved_f = plt.gcf()
+        plt.figure(self._multi_spec_plot_figure.number)
+
+        e1 = fits.open(rmf_fn)['ISGR-EBDS-MOD'].data['E_MIN']
+        e2 = fits.open(rmf_fn)['ISGR-EBDS-MOD'].data['E_MAX']
+        s = fits.open(fn)[1]
+
+        r = s.data['RATE']/(e2-e1)#*e1
+        r_morph = s.data['RATE']/(e_morph(e2)-e_morph(e1))#*e1
+
+        x = plt.plot(
+            e1,
+            r,
+        )
+        plt.plot(
+            e_morph(e1),
+            r_morph,
+            ls=":",
+            c=x[0].get_color(),
+            label=f"morphed {s.header['NAME']}"
+        )
+        self._max_rate = max(np.nanmax(r), self._max_rate)
+        
+        if s.header['NAME'] == 'Background':
+            m_line = (e1>50) & (e1<70)
+            
+            e1_peak_estim = e1[m_line][np.nanargmax(r[m_line])]
+            plt.axvline(e1_peak_estim,
+                        label=f'peak estimate: {e1_peak_estim}',
+                        lw=5,
+                        alpha=0.3
+                       )
+
+        plt.figure(saved_f.number)
+            
+
+    def multi_spec_plot_finalize(self):
+        saved_f = plt.gcf()
+
+        plt.figure(self._multi_spec_plot_figure.number)
+        plt.axvline(59, ls=":", lw=3, c='k')
+        plt.axvline(511, ls=":", lw=3, c='k')
+        plt.axvline(32, ls="--", lw=5, alpha=0.3, c='r')
+        plt.axvline(27, ls="--", lw=5, alpha=0.3, c='r')
+                
+                
+        plt.ylim([self._max_rate*0.001, self._max_rate*2])
+        plt.loglog()
+        plt.legend()
+
+        plt.xlabel('keV')
+        plt.ylabel('counts/s/keV')
+
+        plt.savefig("mutli-spec.png")
+        plt.figure(saved_f.number)
 
 import dataanalysis.callback
 
