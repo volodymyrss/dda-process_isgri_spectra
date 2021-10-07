@@ -204,7 +204,7 @@ def merge_rmfs(rmfs: dict):
     return merged_rmf_f, total_exposure
 
 class ISGRISpectraSum(ddosa.DataAnalysis):
-    version="v5.8.5"
+    version="v5.8.6"
 
     input_spectralist=ScWSpectraList
     input_response=ddosa.SpectraBins
@@ -594,17 +594,20 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
             
         from astropy.time import Time
 
+        # need to read from IC, per spectrum, in oda/osa
+        # https://gitlab.astro.unige.ch/integral/cc-workflows/cc-global-summary
         def offset_approximation(ijd):
-            return (2000 - ijd)/(800) * (1 - (ijd-5000)/6000)
+            z1 = 2000
+            z2 = 6000
+            p1 = -1.5
+            p2 = -4
+            return (z1 - ijd) * (z2 + (z2-z1) - ijd) / (z1-z2)**2 * (-p2+p1) + p1
 
         offset_approximation(Time(2015, format='byear').mjd - 51544)
 
         plt.figure(figsize=(15, 10))
 
-        # need to read from IC, per spectrum, in oda/osa
-        def offset_approximation(ijd):
-            return (2000 - ijd)/(800) * (1 - (ijd-5000)/6000)
-
+        
         def e_morph_family(E, lebias=4):
             #r = E - E / ( 1 + (E/18)**2 )
             r = E - lebias/(1 + np.exp((E/27)**2))*(1 + np.exp(1))
