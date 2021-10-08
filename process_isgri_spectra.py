@@ -507,7 +507,10 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
             self.multi_spec_plot_add_spectrum(fn, rmf_fn, e_morph)
 
-        self.multi_spec_plot_finalize()
+        try:
+            self.multi_spec_plot_finalize()
+        except Exception as e:
+            print("unable to plot:", e)
 
         self.source_results=source_results
 
