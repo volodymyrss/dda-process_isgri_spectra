@@ -231,7 +231,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
             i_spec+=1
             print("spectrum from",fn)
 
-            f=fits.open(fn)
+            f=fits.open(fn).copy()
 
             if fn in used_spectra:
                 raise Exception("identical spectra in different scw! impossible!")
