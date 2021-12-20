@@ -238,7 +238,12 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
             else:
                 used_spectra.append(fn)
 
-            t1,t2=f[1].header['TSTART'],f[1].header['TSTOP']
+            try:
+                t1,t2=f[1].header['TSTART'],f[1].header['TSTOP']
+            except IndexError as e:                
+                print("skipping for no start/stop", pack)
+                continue
+
             print(t1,t2)
 
             for e in f:
