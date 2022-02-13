@@ -245,6 +245,11 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
                 continue
             
             fn=spectrum.spectrum.get_path()
+
+            if not hasattr(rmf, 'rmf'):
+                print("\033[31mWARNING\033[0m no rmf! skipping",spectrum, rmf)
+                continue
+
             rmf_fn = rmf.rmf.get_path()
 
             print("%i/%i"%(i_spec,len(choice)))
