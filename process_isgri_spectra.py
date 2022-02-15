@@ -175,11 +175,9 @@ def merge_rmfs(rmfs: dict):
         if merged_rmf_f is None:
             merged_rmf_f = fits.open(rmf_fn)
 
-            area_peak = np.stack(merged_rmf_f['ISGR-RMF.-RSP'].data['MATRIX']).sum(1)
+            area_peak = np.stack(merged_rmf_f['ISGR-RMF.-RSP'].data['MATRIX']).sum(1).max()
             print("individual rmf area peak:", area_peak)
 
-            if area_peak < 1000:
-                raise RuntimeError('suspiciously low rmf area peak!')
 
             merged_rmf_f['ISGR-RMF.-RSP'].data['MATRIX'] *= rmf_exposure
             
@@ -187,7 +185,7 @@ def merge_rmfs(rmfs: dict):
         else:
             rmf_f = fits.open(rmf_fn)
 
-            area_peak = np.stack(merged_rmf_f['ISGR-RMF.-RSP'].data['MATRIX']).sum(1)
+            area_peak = np.stack(merged_rmf_f['ISGR-RMF.-RSP'].data['MATRIX']).sum(1).max()
             print("individual rmf area peak:", area_peak)
 
             merged_rmf_f['ISGR-RMF.-RSP'].data['MATRIX'] += rmf_f['ISGR-RMF.-RSP'].data['MATRIX'] * rmf_exposure
@@ -195,9 +193,11 @@ def merge_rmfs(rmfs: dict):
 
     merged_rmf_f['ISGR-RMF.-RSP'].data['MATRIX'] /= total_exposure
 
-    area_peak = np.stack(merged_rmf_f['ISGR-RMF.-RSP'].data['MATRIX']).sum(1)
+    area_peak = np.stack(merged_rmf_f['ISGR-RMF.-RSP'].data['MATRIX']).sum(1).max()
     print("merged rmf area peak:", area_peak)
 
+    if area_peak < 1000:
+        raise RuntimeError('suspiciously low rmf area peak!')
 
     print("merged rmf total exposure", total_exposure)
 
