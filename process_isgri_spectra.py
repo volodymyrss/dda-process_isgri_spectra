@@ -79,7 +79,7 @@ class ProcessSpectra(ddosa.DataAnalysis):
             print("source:",sname,"to",fn)
             print("response",hdu.header['RESPFILE'])
             print(hdu.header['ANCRFILE'])
-            hdu.writeto(fn,clobber=True)
+            hdu.writeto(fn,overwrite=True)
             setattr(self,fn,da.DataFile(fn))
 
 
@@ -370,7 +370,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
             if list(spectrum[4].keys())[0] is not None:
                 arf_fn="arf_sum_%s.fits"%source_short_name
-                fits.open(list(spectrum[4].keys())[0]).writeto(arf_fn,clobber=True)
+                fits.open(list(spectrum[4].keys())[0]).writeto(arf_fn,overwrite=True)
             else:
                 arf_fn="arf_sum_%s.fits"%source_short_name
                 dc=pilton.heatool("dal_create")
@@ -404,7 +404,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
             print("writing:", merged_rmf_f,"to",rmf_fn)
             #print("writing:",list(spectrum[5].keys())[0],"to",rmf_fn)
-            merged_rmf_f.writeto(rmf_fn, clobber=True)
+            merged_rmf_f.writeto(rmf_fn, overwrite=True)
             
 
             try:
@@ -464,7 +464,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
             spectrum[3].data['QUALITY'][ebds_ext.data['E_MIN'] < emin]=3
 
             fn="isgri_sum_%s.fits"%source_short_name
-            spectrum[3].writeto(fn, clobber=True, checksum=True)
+            spectrum[3].writeto(fn, overwrite=True, checksum=True)
             print("writing",fn)
 
 
