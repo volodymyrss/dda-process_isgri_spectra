@@ -70,7 +70,7 @@ class ProcessSpectra(ddosa.DataAnalysis):
             print("source:",sname,"to",fn)
             print(hdu.header['RESPFILE'])
             print(hdu.header['ANCRFILE'])
-            hdu.writeto(fn,clobber=True)
+            hdu.writeto(fn,overwrite=True)
             setattr(self,fn,da.DataFile(fn))
 
 
@@ -346,14 +346,14 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
                 raise MultiEpochRMFNotSupported(f"found many epochs: {list(spectrum[5].keys())}")
 
             arf_fn="arf_sum_%s.fits"%source_short_name
-            #fits.open(spectrum[4].keys()[0]).writeto(arf_fn,clobber=True)
+            #fits.open(spectrum[4].keys()[0]).writeto(arf_fn,overwrite=True)
             print("total arf:",arf_fn,arf_first[1].data['SPECRESP'].max()*total_exposure,"cm**2 * s")
-            arf_first.writeto(arf_fn,clobber=True)
+            arf_first.writeto(arf_fn,overwrite=True)
             
 
             rmf_fn="rmf_sum_%s.fits"%source_short_name
             print("individual rmf",list(spectrum[5].keys())[0])
-            fits.open(list(spectrum[5].keys())[0]).writeto(rmf_fn,clobber=True)
+            fits.open(list(spectrum[5].keys())[0]).writeto(rmf_fn,overwrite=True)
             
 
             #spectrum[3].data['RATE'][:],spectrum[3].data['STAT_ERR'][:]=self.input_efficiency.correct(spectrum[0][:],(spectrum[1]**0.5)[:])
@@ -393,7 +393,7 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
 
 
             fn="isgri_sum_%s.fits"%source_short_name
-            spectrum[3].writeto(fn, clobber=True, checksum=True)
+            spectrum[3].writeto(fn, overwrite=True, checksum=True)
             print("writing",fn)
 
 
