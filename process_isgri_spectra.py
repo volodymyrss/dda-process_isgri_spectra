@@ -19,7 +19,7 @@ try:
 except ImportError:
     import dataanalysis as da
 
-from numpy import *
+from numpy import copy, array, isnan, isinf, exp, log, zeros, std, savetxt, column_stack
 import numpy as np
 from collections import defaultdict
 
