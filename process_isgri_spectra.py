@@ -318,6 +318,10 @@ class ISGRISpectraSum(ddosa.DataAnalysis):
                         spectra[name] = [rate, err**2, exposure, e.copy(), defaultdict(int), defaultdict(int),ontime,telapse,tstart,tstop,[revol],exp_src]
                         preserve_file=True
                     else:
+                        print("spectra[name][8]:", spectra[name][8], type(spectra[name][8]))
+                        print("tstart:", tstart, type(tstart))
+                        print("min(spectra[name][8],tstart)", min(spectra[name][8],tstart))
+
                         err[np.isnan(err) | (err==0)]=np.inf
                         spectra[name][1][np.isnan(spectra[name][1]) | (spectra[name][1]==0)]=np.inf
                         spectra[name][0]=(spectra[name][0]/spectra[name][1]+rate/err**2)/(1/spectra[name][1]+1/err**2)
