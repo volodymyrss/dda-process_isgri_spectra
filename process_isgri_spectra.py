@@ -36,6 +36,7 @@ def get_open_fds():
 
     .. warning: will only work on UNIX-like os-es.
     '''
+    return 0
 
     pid = os.getpid()
     procs = subprocess.check_output( 
